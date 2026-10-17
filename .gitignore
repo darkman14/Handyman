@@ -1,0 +1,37 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+appsettings.Local.json
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+frontend/test-results/
+frontend/playwright-report/
+frontend/e2e/artifacts/
+
+# Env and secrets
+*.env
+.env*.local
+docs/local-credentials.md
+
+# Supabase
+supabase/.temp/
+supabase/.branches/
+
+# Claude Code (personal)
+.claude/settings.local.json
+.claude/agent-memory-local/
+CLAUDE.local.md
+
+# graphify (rebuilt locally by git hooks)
+graphify-out/
+
+# OS
+.DS_Store
+Thumbs.db
