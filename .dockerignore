@@ -1,0 +1,10 @@
+**/node_modules
+**/bin
+**/obj
+frontend/dist
+frontend/.expo
+frontend/test-results
+**/appsettings.Local.json
+**/.env*
+.git
+.claude

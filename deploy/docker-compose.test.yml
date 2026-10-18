@@ -9,7 +9,8 @@ services:
       ConnectionStrings__Default: ${DB_CONNECTION}
       Supabase__Url: ${SUPABASE_URL}
       Supabase__ServiceRoleKey: ${SUPABASE_SERVICE_ROLE_KEY}
-      Seed__Enabled: "true"
+      Database__MigrateOnStartup: "true"
+      Seed__Enabled: "true" # read by the seeder once it exists (build order step for seeded data)
 
   web:
     image: ghcr.io/${GHCR_OWNER}/handyman-web:${TAG:-develop}

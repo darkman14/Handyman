@@ -40,7 +40,9 @@ builder.Services.AddCors(cors => cors.AddDefaultPolicy(policy =>
 
 var app = builder.Build();
 
-if (!isDocGeneration && builder.Environment.IsDevelopment())
+// The shared test server sets Database__MigrateOnStartup=true (see deploy/docker-compose.test.yml).
+var migrateOnStartup = builder.Environment.IsDevelopment() || builder.Configuration.GetValue<bool>("Database:MigrateOnStartup");
+if (!isDocGeneration && migrateOnStartup)
 {
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();

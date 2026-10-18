@@ -1,7 +1,7 @@
 # Web app: Expo web export served by Caddy, which also reverse-proxies the API
 FROM node:lts AS build
 WORKDIR /src/frontend
-COPY frontend/package.json frontend/package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc ./
 RUN npm ci
 COPY frontend/ ./
 COPY docs/api/ /src/docs/api/
