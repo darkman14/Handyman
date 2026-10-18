@@ -1,1 +1,2 @@
 - [Docker in WSL](env_docker_wsl.md) — start Supabase through the WSL Linux CLI, not Windows npx
+- [OpenAPI build quirks](env_openapi_build.md) — file name dots, Microsoft.OpenApi pin, EF version alignment
