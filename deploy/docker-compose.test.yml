@@ -1,0 +1,28 @@
+# Shared test environment. Copy to /opt/handyman/docker-compose.yml on the server,
+# next to a .env file (never committed) with the variables below.
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER}/handyman-api:${TAG:-develop}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Test
+      ConnectionStrings__Default: ${DB_CONNECTION}
+      Supabase__Url: ${SUPABASE_URL}
+      Supabase__ServiceRoleKey: ${SUPABASE_SERVICE_ROLE_KEY}
+      Seed__Enabled: "true"
+
+  web:
+    image: ghcr.io/${GHCR_OWNER}/handyman-web:${TAG:-develop}
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      SUPABASE_URL: ${SUPABASE_URL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

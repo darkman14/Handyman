@@ -1,0 +1,15 @@
+# Web app: Expo web export served by Caddy, which also reverse-proxies the API
+FROM node:lts AS build
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+COPY docs/api/ /src/docs/api/
+ARG EXPO_PUBLIC_SUPABASE_URL
+ARG EXPO_PUBLIC_SUPABASE_ANON_KEY
+ARG EXPO_PUBLIC_API_URL=/api
+RUN npx expo export --platform web
+
+FROM caddy:2
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /src/frontend/dist /srv
