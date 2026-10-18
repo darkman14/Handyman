@@ -14,7 +14,13 @@ Everything runs on your machine: Supabase (Postgres, Auth, Storage, Studio) in D
 
 The Supabase CLI runs through `npx supabase`, so no global install is needed.
 
+## 1a. If Docker runs on a VM
+
+Copy `.env.dev.local.example` to `.env.dev.local` and set `DOCKER_IP` (for example `172.24.146.72`). Then either develop inside the VM (recommended; also set `LAN_IP` to the VM address) or point your desktop's Docker tools at the VM with the `DOCKER_HOST` and `TESTCONTAINERS_HOST_OVERRIDE` user environment variables. The full steps are in `workflow.md` section 6, "Docker on another machine". After that, every URL in this guide that says `localhost` for Supabase or Postgres uses the VM address instead; `docs/local-credentials.md` shows the right ones.
+
 ## 2. First-time setup
+
+New repo? Run `/bootstrap` in Claude Code instead of setting things up by hand (`workflow.md` section 6).
 
 Run from the repo root.
 
@@ -83,6 +89,8 @@ Enter any seeded phone number and code `123456`. The full list with roles is in 
 To test both sides at once, use a normal browser window for one user and a private window (or the phone) for the other.
 
 ## 5. Use the app on your phone
+
+The easiest way is the shared test environment (`workflow.md` section 6, Step 5): open its URL in the phone's browser. To run your local build on a phone instead:
 
 1. Connect the phone and the computer to the same Wi-Fi.
 2. Find the computer's LAN IP (`ipconfig` on Windows, `ipconfig getifaddr en0` on macOS, `hostname -I` on Linux).

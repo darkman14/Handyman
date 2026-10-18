@@ -6,7 +6,7 @@
 
 | Item | Value |
 | --- | --- |
-| Host | localhost |
+| Host | {{DOCKER_IP}} |
 | Port | 54322 |
 | Database | postgres |
 | User | postgres |

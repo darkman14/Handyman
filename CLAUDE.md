@@ -23,6 +23,10 @@ Marketplace app: store sellers refer clients, clients post repair problems, matc
 | Web e2e (API + web running) | `cd frontend && npm run e2e` |
 | Access token for a seeded user | `./scripts/dev-token.sh +381600000201` |
 
+## Environment
+
+Docker and local Supabase may run on another machine (see `.env.dev.local`, `DOCKER_IP`). Never assume `localhost` for Postgres or Supabase; read the generated config. Shared test environment: deployed from `develop` (workflow.md section 6, Step 5).
+
 ## Hard rules
 
 - Business rules live in the API. The app never reads or writes business tables through Supabase; it uses Supabase only for sign-in.
@@ -36,7 +40,7 @@ Marketplace app: store sellers refer clients, clients post repair problems, matc
 
 ## AI team
 
-Subagents in `.claude/agents/`: `product-owner`, `backend-dev`, `frontend-dev`, `qa-api`, `qa-app` (and a cheaper `Explore`). Skills: `/plan <slice or idea>`, `/deliver <US-id>`, `/qa <US-id>`. Each agent may edit only its own area (enforced by `scripts/guard-paths.mjs`).
+Subagents in `.claude/agents/`: `platform-dev`, `product-owner`, `backend-dev`, `frontend-dev`, `qa-api`, `qa-app` (and a cheaper `Explore`). Skills: `/bootstrap [step]`, `/plan <slice or idea>`, `/deliver <US-id>`, `/qa <US-id>`. Each agent may edit only its own area (enforced by `scripts/guard-paths.mjs`).
 
 ## Definition of done
 
@@ -44,13 +48,3 @@ Subagents in `.claude/agents/`: `product-owner`, `backend-dev`, `frontend-dev`, 
 2. Backend tests, frontend typecheck, tests and web build are green.
 3. No open bug of severity high or critical for the story.
 4. Story status is `done`, QA results are filled in, and the OpenAPI file and generated types are committed.
-
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

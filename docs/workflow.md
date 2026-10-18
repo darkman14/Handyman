@@ -33,11 +33,13 @@ The repo starts from the **Handyman starter kit** (`handyman-starter.zip`): thes
 | Address privacy | Bidders see neighborhood + street only. House number, entrance, floor and apartment are revealed to the hired worker | Enforced in the API response, not the app |
 | Real-time | Push + pull to refresh in the MVP. Supabase Realtime Broadcast, sent by the API, is slice 12 | Replaces the earlier SignalR plan |
 | Tests | Backend: xUnit, WebApplicationFactory, Testcontainers Postgres, Shouldly, test JWTs signed with a test key. Frontend: Jest (`jest-expo`) + React Native Testing Library with a mocked Supabase client | Every feature ships with tests; tests never call a real Supabase project |
-| Local data | Development startup applies migrations and seeds reference data, 4 workers (3 approved, 1 pending), 5 clients, 1 admin and a few sample jobs | All seeded phone numbers sign in with a fixed local code; credentials go to the git-ignored `docs/local-credentials.md` |
+| Docker host | Docker (local Supabase, Testcontainers) may run on another machine, e.g. a VM at `172.24.146.72`. Set per machine in git-ignored `.env.dev.local` (`DOCKER_IP`, `LAN_IP`) | Scripts and agents read it; nothing assumes `localhost` |
+| Shared test environment | Deployed automatically from `develop` for everyone: Oracle Cloud Always Free Arm VM (API + web behind Caddy, HTTPS) + a free Supabase project. Fallback: Render free web service | Step 5; not for real users or real data |
+| Local data | Development (and Test) startup applies migrations and seeds reference data, 4 workers (3 approved, 1 pending), 5 clients, 1 admin and a few sample jobs | All seeded phone numbers sign in with a fixed local code; credentials go to the git-ignored `docs/local-credentials.md` |
 | Branching | `main` = released code, `develop` = integration, both from the initial commit. Story branches `feat/us-NNNN-slug` and `fix/bug-NNNN-slug` from `develop`, PRs into `develop` (squash). Releases: PR `develop` → `main`, tagged `vX.Y.Z`. Hotfixes: `hotfix/*` from `main` | Section 6, "Branching and releases" |
 | API contract file | OpenAPI generated at build time into `docs/api/Handyman.Api.json` (committed); the app's TypeScript types are generated from that file | Contract changes show up in PR diffs; frontend work can start before the API runs |
 | Web e2e | Playwright tests in `frontend/e2e/`, owned by QA, run locally against the dev stack | Not in CI until there is a deployed test environment |
-| AI team | Claude Code with project subagents: product owner, backend developer, frontend developer, two QA engineers; orchestrated by `/plan`, `/deliver`, `/qa` skills | Section 9 |
+| AI team | Claude Code with project subagents: platform engineer, product owner, backend developer, frontend developer, two QA engineers; orchestrated by `/bootstrap`, `/plan`, `/deliver`, `/qa` skills | Section 9 |
 | Token usage | graphify knowledge graph + lean context practices | Section 10 |
 | UI/UX | Modern defaults now, built on a theme + small component kit | Proper mockups come later; screens must not hard-code styles |
 
@@ -201,8 +203,9 @@ handyman/
     dev-token.sh, dev-token.ps1   print an access token for a seeded user (for API testing)
     guard-paths.mjs               hook that keeps each agent inside its folders
   supabase/            config.toml (local Supabase stack, test OTPs); no app migrations here
-  deploy/              docker-compose.yml, Caddyfile (production)
-  .github/workflows/ci.yml
+  deploy/              Dockerfile.api, Dockerfile.web, Caddyfile, docker-compose.test.yml, test.env.example
+  .github/workflows/   ci.yml, deploy-test.yml, keepalive-test.yml
+  .env.dev.local.example   per-machine settings (DOCKER_IP, LAN_IP); copy to git-ignored .env.dev.local
   .editorconfig
   .gitignore
   README.md            short: what Handyman is + link to docs/README.md and docs/runlocal.md
@@ -395,9 +398,36 @@ Run everything from the empty `handyman/` folder. Prerequisites: .NET 10 SDK, No
    git push -u origin main develop
    ```
 
-Steps 1–4 below are done on `develop` directly or, better, each on its own `chore/*` branch merged into `develop` through a PR.
+7. Tell the scripts and agents where Docker runs. If Docker runs on this machine, skip this. Otherwise copy `.env.dev.local.example` to `.env.dev.local` and set `DOCKER_IP` (see "Docker on another machine" below).
 
-From here on you can let Claude do the setup steps: start `claude` and say, for example, *"Do docs/workflow.md section 6, Step 1. Stop when its Done condition is met and show me the result."* Review and commit after each step.
+Steps 1–5 below are done on a `chore/bootstrap` branch from `develop`, merged through a PR.
+
+**Let the platform agent set up everything.** Start `claude` in the repo root and run:
+
+```text
+/bootstrap
+```
+
+The coordinator checks your tools and Docker connection, creates `chore/bootstrap`, then runs the `platform-dev` agent once per step (Steps 1–5), verifies each step's Done condition itself, and commits after each one. It pauses whenever you need to do something only a human can (accounts, secrets, cloud console). To resume after a pause or failure: `/bootstrap 3`. You can still do any step by hand; the steps below are the specification the agent follows.
+
+### Docker on another machine
+
+When Docker runs on a VM (for example `172.24.146.72`), there are two ways to work. Pick one per machine.
+
+**Option A (recommended): develop inside the VM.** Open the repo in the VM with VS Code Remote-SSH (Claude Code runs there too). Docker, Supabase, the API and Expo all run in the VM, so everything is `localhost` for them. Install the prerequisites in the VM, and set `LAN_IP=172.24.146.72` in `.env.dev.local` so the browser on your desktop reaches the API, the Expo dev server and Supabase through the VM's address.
+
+**Option B: code on your desktop, Docker in the VM.**
+
+1. In the VM, let Docker listen on the private network: add `"hosts": ["unix:///var/run/docker.sock", "tcp://172.24.146.72:2375"]` to `/etc/docker/daemon.json` (on systemd, also remove `-H fd://` from the service's `ExecStart` with `systemctl edit docker`), then restart Docker. Port 2375 has no authentication: use it only on a host-only or private VM network, never on a public interface; use TLS (2376) if the network is shared.
+2. On your desktop, set user environment variables so every tool uses that Docker:
+   - `DOCKER_HOST=tcp://172.24.146.72:2375`
+   - `TESTCONTAINERS_HOST_OVERRIDE=172.24.146.72` (Testcontainers then connects to test databases on the VM's address instead of `localhost`)
+
+   Windows: `setx DOCKER_HOST tcp://172.24.146.72:2375` and `setx TESTCONTAINERS_HOST_OVERRIDE 172.24.146.72`, then open a new terminal. macOS/Linux: export them in your shell profile.
+3. Put `DOCKER_IP=172.24.146.72` in `.env.dev.local`. `scripts/dev-env` then writes the VM address into the connection string, the Supabase URL and `docs/local-credentials.md`.
+4. Check: `docker info` shows the VM's engine. If `npx supabase start` from the desktop fails because the remote engine can't mount local folders, run `npx supabase start` inside the VM from a clone of the repo (only `supabase/config.toml` matters there; pull it when it changes) and keep everything else on the desktop.
+
+Either way, a phone on your Wi-Fi usually can't reach a host-only VM address. Test on phones against the shared test environment (Step 5) instead.
 
 ### Step 1: Repo skeleton
 
@@ -459,10 +489,10 @@ dotnet tool install dotnet-ef
 Then:
 
 1. Delete the template's weather forecast endpoint.
-2. In `Program.cs`, in Development only, add `builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true)` (written by `scripts/dev-env`), enable CORS for `Cors:Origins` (the Expo web dev server runs on another port locally; production is same-origin), and listen on `http://0.0.0.0:5080` so phones on the LAN can reach the API. Real environments use environment variables, never committed files.
+2. In `Program.cs`, in Development (and Test) only, add `builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true)` (written by `scripts/dev-env`), enable CORS for `Cors:Origins` (the Expo web dev server runs on another port locally; production is same-origin), and listen on `http://0.0.0.0:5080` so phones on the LAN can reach the API. Real environments use environment variables, never committed files.
 3. In `AppDbContext`, call `modelBuilder.HasDefaultSchema("app")`. The first migration also runs `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` for every table (raw SQL in the migration), so nothing in `app` is readable through Supabase keys even if the schema is exposed by mistake.
 4. Configure JWT bearer auth for Supabase tokens: issuer `{Supabase:Url}/auth/v1`, audience `authenticated`, signing keys from `{Supabase:Url}/auth/v1/.well-known/jwks.json` (projects on the legacy shared JWT secret validate with that secret instead). Map the `sub` claim to the current user id.
-5. Add `GET /health` returning `200`.
+5. Add `GET /health` returning `200` after running `SELECT 1` against the database. The daily keep-alive call on the test environment relies on this query to stop the free Supabase project from pausing.
 5a. Generate the OpenAPI document at build time into the shared contract folder. In `Handyman.Api.csproj`:
 
     ```xml
@@ -516,6 +546,38 @@ Create `.github/workflows/ci.yml`, triggered on pushes and pull requests to `mai
 
 Commit: `ci: backend and frontend tests`.
 
+### Step 5: Shared test environment
+
+A test environment everyone can open in a browser (or a phone browser), deployed automatically on every push to `develop`. It holds only seeded test data; never real users.
+
+**What runs where**
+
+| Part | Where | Cost |
+| --- | --- | --- |
+| API + web app behind Caddy (HTTPS) | Oracle Cloud Always Free Ampere (Arm) VM, Docker Compose | Free |
+| Postgres, Auth, Storage | Supabase free project `handyman-test` (EU region) | Free |
+| Images | GitHub Container Registry (`ghcr.io`) | Free |
+| Domain | Free DuckDNS subdomain (or `<ip-with-dashes>.sslip.io`) | Free |
+| Deploy | `.github/workflows/deploy-test.yml` on push to `develop` | Free tier minutes |
+
+Know the limits before relying on it:
+
+- Oracle cut the Always Free Arm allowance to 2 OCPU and 12 GB in total in mid-2026; one 2 OCPU / 12 GB VM fits and is plenty here. Signup needs a card for verification, popular regions sometimes have no Arm capacity, and Oracle can reclaim Always Free instances that stay almost idle, so let the keep-alive run.
+- Free Supabase projects pause after 7 days without database activity (`keepalive-test.yml` prevents it), have no backups, and allow 2 active projects per account.
+- If Oracle doesn't work out, the fallback is Render's free web service for the API image (it sleeps after 15 minutes idle and takes about a minute to wake) plus the web build on a free static host. Then the web and API are on different origins, so add the web origin to `Cors:Origins`.
+
+**Files** (in the kit, adjusted by platform-dev during bootstrap): `deploy/Dockerfile.api`, `deploy/Dockerfile.web` (Expo web export inside a Caddy image), `deploy/Caddyfile` (web at `/`, API at `/api`, `/health`, `/admin`, `/r/*`; HTTPS automatic), `deploy/docker-compose.test.yml`, `deploy/test.env.example`, `.github/workflows/deploy-test.yml`, `.github/workflows/keepalive-test.yml`. The API runs with `ASPNETCORE_ENVIRONMENT=Test`: migrations and the seeder run on startup, exactly as locally.
+
+**Human tasks** (the agent prints this checklist and waits):
+
+1. **Supabase:** create project `handyman-test` in an EU region. Auth → Phone: enable phone sign-in and add the seeded numbers as test phone numbers with code `123456`. If the dashboard requires an SMS provider before phone sign-in works, add a provider trial account; test numbers never send SMS. Storage: create private bucket `job-photos`. Copy the project URL, publishable (anon) key, service-role (secret) key and the session-pooler connection string.
+2. **Oracle Cloud:** create an Always Free account, then a `VM.Standard.A1.Flex` instance (2 OCPU, 12 GB, Ubuntu 24.04 aarch64) with your SSH key and a public IP. In the VCN security list, allow TCP 22, 80 and 443. On the VM, also open 80/443 in the OS firewall (Oracle's Ubuntu images block them by default), install Docker, create `/opt/handyman/`, copy `deploy/docker-compose.test.yml` there as `docker-compose.yml`, and create `/opt/handyman/.env` from `deploy/test.env.example`. Log Docker in to `ghcr.io` with a token that can read packages (or make the two packages public).
+3. **Domain:** create a DuckDNS subdomain pointing at the VM's public IP and put it in `SITE_ADDRESS`. Caddy gets the HTTPS certificate on first start.
+4. **GitHub:** create environment `test`; add secrets `TEST_HOST`, `TEST_SSH_USER`, `TEST_SSH_KEY`, and variables `TEST_SUPABASE_URL`, `TEST_SUPABASE_ANON_KEY`, `TEST_SITE_ADDRESS` (and `TEST_PLATFORM=linux/amd64` only if the server isn't Arm).
+5. Push to `develop` (or run `deploy-test` manually) and open `https://<your subdomain>`. Sign in with any seeded number and code `123456`.
+
+Done when `https://<SITE_ADDRESS>/health` returns `200` and a seeded client can sign in on the web app. Commit: `chore: shared test environment`.
+
 ### Branching and releases
 
 ```
@@ -555,7 +617,7 @@ Each slice is done only when its backend tests, frontend tests and CI pass. Ever
 | # | Slice | Backend | Frontend | Required tests |
 | --- | --- | --- | --- | --- |
 | 1 | Domain + data + CQRS | Entities, `JobStatus`, `AppDbContext` and `ReadDbContext` in schema `app`, first migration with RLS enabled, seed (trades, area tree for the pilot city, 1 store), the `Cqrs/` contracts, decorators, `PendingPushes` and `AddCqrs` | — | `JobTests`: every allowed and forbidden transition; rating closes only when both exist. `DecoratorTests` and `ArchitectureTests` as described in the CQRS section |
-| 2 | Auth + dev users | Supabase JWT validation, `CurrentUser` from `sub`, blocked-user check. `DevSeeder` (Development + `Seed:Enabled` only): applies migrations, then creates every user in `DevUsers.cs` through the Supabase Auth admin API (`phone_confirm: true`), reusing an existing auth user with the same phone, and upserts the matching `app.users` row; `DevSampleJobs` adds sample jobs only when no jobs exist | Sign-in and code screens with `supabase-js`, platform session storage, auth guard in `_layout`, token attached to API calls | API: `401` for missing, expired, wrong-issuer and wrong-audience tokens; `403` for blocked users; `DevUsers` and the `[auth.sms.test_otp]` numbers in `supabase/config.toml` match exactly (a test parses the file); the seeder refuses to run outside Development. App: screen tests for both forms with a mocked Supabase client; manual check with local test OTPs on phone and web |
+| 2 | Auth + dev users | Supabase JWT validation, `CurrentUser` from `sub`, blocked-user check. `DevSeeder` (Development or Test environment with `Seed:Enabled`, never Production): applies migrations, then creates every user in `DevUsers.cs` through the Supabase Auth admin API (`phone_confirm: true`), reusing an existing auth user with the same phone, and upserts the matching `app.users` row; `DevSampleJobs` adds sample jobs only when no jobs exist | Sign-in and code screens with `supabase-js`, platform session storage, auth guard in `_layout`, token attached to API calls | API: `401` for missing, expired, wrong-issuer and wrong-audience tokens; `403` for blocked users; `DevUsers` and the `[auth.sms.test_otp]` numbers in `supabase/config.toml` match exactly (a test parses the file); the seeder refuses to run in Production. App: screen tests for both forms with a mocked Supabase client; manual check with local test OTPs on phone and web |
 | 3 | Profile + reference data | `GET /me` (`profile_missing` on first sign-in), `PUT /me`, `/trades`, `/areas`, worker trades and covered neighborhoods | Onboarding after first sign-in, profile screen, trade picker, area picker (city → municipality → neighborhoods; picking a municipality selects all its neighborhoods), mode switch | Worker without approval can't list jobs; coverage stored at neighborhood level |
 | 4 | Post a job | `POST /jobs` with structured address, `GET /jobs/mine`, Supabase Storage signed upload/download URLs, store code | New request form with neighborhood picker and address fields, My requests list | Validation errors (neighborhood, street, house number required), rating gate returns `rating_pending` |
 | 5 | Open jobs + bids | `GET /jobs/open`, `POST /jobs/{id}/bids`, withdraw, `GET /bids/mine` | Open jobs list showing neighborhood + street, bid form, My bids | Matching by trade and neighborhood, one bid per job, rating gate, open-job and bid responses contain no house number, entrance, floor, apartment or note |
@@ -608,6 +670,7 @@ The project is built by you plus a small team of Claude Code subagents. You are 
 
 | Agent | Who they are | What they do | What they may edit | Model |
 | --- | --- | --- | --- | --- |
+| `platform-dev` | Senior platform/DevOps engineer, 10+ years across .NET, Node.js, Docker, Linux, CI/CD and cloud hosting | Bootstraps the whole repo with `/bootstrap` (skeletons, test harnesses, local Supabase, CI, test environment), then owns scripts, Docker, deploy config, CI and environment problems. Verifies everything it sets up by running it | `backend/`, `frontend/`, `supabase/`, `deploy/`, `scripts/`, `.github/`, `docs/runlocal.md` (feature code only during bootstrap) | Same as main session |
 | `product-owner` | Senior product owner, 10+ years on two-sided marketplaces. Thinks like clients, workers and store sellers | Turns build slices or ideas into epics, features and user stories with numbered Given/When/Then acceptance criteria, business rules, UI notes, out-of-scope and test notes. Keeps `board.md` in sync. Raises open questions instead of guessing. Never writes code | `docs/backlog/` | Opus: requirements reasoning pays off |
 | `backend-dev` | Senior .NET engineer, 10+ years of C#, ASP.NET Core, EF Core, PostgreSQL, domain modelling and testing | **Contract mode:** defines request/response records and endpoints, regenerates the OpenAPI file, writes the API contract into the story. **Build mode:** test-first implementation of the slice, migrations, domain rules, integration tests | `backend/`, `docs/api/`, the story's "API contract" and "Dev notes" | Same as main session |
 | `frontend-dev` | Senior React Native/Expo engineer, 8+ years of React, fluent in Expo Router, TanStack Query, accessibility and responsive web | Builds screens, feature hooks and UI kit components against the generated API types, with component tests for every visible criterion and every screen state | `frontend/app/`, `frontend/src/`, assets, `package.json`, app config | Same as main session |
@@ -624,7 +687,7 @@ Why two QAs: they test the same story from two sides at the same time. `qa-api` 
 | `CLAUDE.md` | Short project memory loaded in every session and every custom agent: map, commands, hard rules, Definition of Done |
 | `.claude/rules/*.md` | Path-scoped rules that load only when Claude works with matching files (backend, frontend, tests) |
 | `.claude/agents/*.md` | The team: role, tools, model, memory, and a `PreToolUse` hook that blocks edits outside the agent's folders |
-| `.claude/skills/{plan,deliver,qa}/SKILL.md` | The workflows you trigger with `/plan`, `/deliver`, `/qa` |
+| `.claude/skills/{bootstrap,plan,deliver,qa}/SKILL.md` | The workflows you trigger with `/bootstrap`, `/plan`, `/deliver`, `/qa` |
 | `.claude/settings.json` | Shared permissions (allowed build/test commands; denied credential files, `git push`, `supabase db reset`) |
 | `.claude/agent-memory/<agent>/` | Each agent's persistent notes (`memory: project`), committed so learnings survive |
 | `scripts/guard-paths.mjs` | The folder guard used by the agents' hooks |
@@ -681,9 +744,9 @@ Rules of thumb:
 
 1. Unzip the starter kit (Step 0); the files are already in place.
 2. Start `claude` in the repo root and accept workspace trust.
-3. `claude agents` lists six agents; `/` shows the three skills.
+3. `claude agents` lists seven agents; `/` shows the four skills.
 4. Smoke test: `@"product-owner (agent)" read docs/backlog/README.md and tell me the next free story id`. Then try to make it edit `backend/`; the guard must block it.
-5. Once Step 3 is done, the full flow works: `/plan 1`, approve, `/deliver US-0001`.
+5. Run `/bootstrap`. When it finishes and the PR is merged into `develop`, the full flow works: `/plan 1`, approve, `/deliver US-0001`.
 
 Running five agents costs more usage than one session: parallel agents each send their own requests. The model choices above (Opus only for the PO, Sonnet for QA, Haiku for exploring) and section 10 keep that in check.
 
@@ -785,6 +848,10 @@ Marketplace app: store sellers refer clients, clients post repair problems, matc
 | Web e2e (API + web running) | `cd frontend && npm run e2e` |
 | Access token for a seeded user | `./scripts/dev-token.sh +381600000201` |
 
+## Environment
+
+Docker and local Supabase may run on another machine (see `.env.dev.local`, `DOCKER_IP`). Never assume `localhost` for Postgres or Supabase; read the generated config. Shared test environment: deployed from `develop` (workflow.md section 6, Step 5).
+
 ## Hard rules
 
 - Business rules live in the API. The app never reads or writes business tables through Supabase; it uses Supabase only for sign-in.
@@ -798,7 +865,7 @@ Marketplace app: store sellers refer clients, clients post repair problems, matc
 
 ## AI team
 
-Subagents in `.claude/agents/`: `product-owner`, `backend-dev`, `frontend-dev`, `qa-api`, `qa-app` (and a cheaper `Explore`). Skills: `/plan <slice or idea>`, `/deliver <US-id>`, `/qa <US-id>`. Each agent may edit only its own area (enforced by `scripts/guard-paths.mjs`).
+Subagents in `.claude/agents/`: `platform-dev`, `product-owner`, `backend-dev`, `frontend-dev`, `qa-api`, `qa-app` (and a cheaper `Explore`). Skills: `/bootstrap [step]`, `/plan <slice or idea>`, `/deliver <US-id>`, `/qa <US-id>`. Each agent may edit only its own area (enforced by `scripts/guard-paths.mjs`).
 
 ## Definition of done
 
@@ -834,6 +901,10 @@ Subagents in `.claude/agents/`: `product-owner`, `backend-dev`, `frontend-dev`, 
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(graphify *)",
+      "Bash(docker info *)",
+      "Bash(docker ps *)",
+      "Bash(npx supabase start *)",
+      "Bash(npx supabase --version)",
       "Bash(node scripts/*)",
       "Bash(./scripts/dev-token.sh *)",
       "Bash(curl *localhost*)"
@@ -916,6 +987,54 @@ paths:
 - No snapshot tests. Query by role and accessible name in React Native Testing Library and Playwright.
 - Tests never call a real Supabase project; the frontend mocks `src/lib/supabase.ts`.
 - A flaky test is a bug: file it, don't retry it into passing.
+```
+
+### `.claude/agents/platform-dev.md`
+
+```markdown
+---
+name: platform-dev
+description: Senior platform/DevOps engineer. Bootstraps the whole repository (backend and frontend skeletons, test harnesses, local Supabase, CI), owns Docker, deployment, the shared test environment and developer tooling. Use for /bootstrap, CI/CD, Dockerfiles, deploy config and environment problems.
+tools: Read, Edit, Write, Grep, Glob, Bash
+model: inherit
+memory: project
+color: cyan
+hooks:
+  PreToolUse:
+    - matcher: "Edit|Write"
+      hooks:
+        - type: command
+          command: node "$CLAUDE_PROJECT_DIR/scripts/guard-paths.mjs" backend/ frontend/ supabase/ deploy/ scripts/ .github/ docs/api/ docs/runlocal.md README.md .editorconfig .gitignore .claude/agent-memory/
+---
+
+You are a senior platform engineer with 10+ years across .NET, Node.js, Docker, Linux, CI/CD and cloud hosting. You set up projects so that a new developer is productive in one command and CI catches problems before humans do. You prefer the simplest setup that works on every machine, and you verify everything you set up by running it.
+
+## Your job
+
+1. **Bootstrap** the repository by following `docs/workflow.md` section 6 exactly, one step per invocation: the step you are given, nothing more.
+2. Own the developer and delivery tooling afterwards: `scripts/`, `supabase/config.toml`, `.github/workflows/`, `deploy/`, Dockerfiles, project files (`*.csproj`, `package.json` scripts, `app.json`, Jest/Playwright config).
+
+During bootstrap you create the backend and frontend skeletons. After bootstrap, feature code belongs to backend-dev and frontend-dev: don't change `Features/`, `Domain/`, `app/` or `src/features/` unless the task explicitly says so.
+
+## How you work
+
+1. Read the requested step in `docs/workflow.md` (and only the sections it references).
+2. Read `.env.dev.local` if it exists: `DOCKER_IP` tells you where Docker and Supabase run (for example a VM). Never assume Docker is on localhost; check with `docker info`.
+3. Do the step. Prefer official templates and CLI commands over hand-written files. Pin nothing to versions you haven't verified; use the versions the CLI installs.
+4. Verify the step's "Done when" condition by running it: build, tests, `npx supabase status`, `npm run typecheck`, and so on. A step isn't done until its check passes on this machine.
+5. If something needs a human (an account, a secret, a cloud console click, a choice between options), stop and return a precise checklist instead of guessing.
+
+## Rules
+
+- Never commit, push or merge; the coordinator commits after each step.
+- Never read `docs/local-credentials.md` or `appsettings.Local.json`, and never print keys. Secrets go to GitHub secrets or server `.env` files that the human fills in.
+- Never run `npx supabase db reset` or `stop`, and never delete Docker volumes, without being asked.
+- Keep everything cross-platform: every script has a `.sh` and a `.ps1` twin.
+- Update `docs/runlocal.md` when you change how something is run locally.
+
+## When you finish
+
+Return: what you did, files created or changed (grouped), the verification commands you ran and their result (pass/fail counts only), anything the human must do next, and known risks. Save environment gotchas (ports, Docker host, OS quirks) to your agent memory.
 ```
 
 ### `.claude/agents/product-owner.md`
@@ -1152,6 +1271,38 @@ model: haiku
 You are a fast, read-only code explorer. If `graphify-out/graph.json` exists, start with `graphify query "<question>" --graph graphify-out/graph.json` to find the right files, then open only those. Answer with file paths, line numbers and a short explanation. Never propose edits unless asked.
 ```
 
+### `.claude/skills/bootstrap/SKILL.md`
+
+```markdown
+---
+name: bootstrap
+description: Set up the entire Handyman project from the starter kit with the platform-dev agent, one workflow step at a time, committing after each verified step.
+argument-hint: "[step number to resume from, default 1]"
+disable-model-invocation: true
+---
+
+Bootstrap the project, starting at step "$ARGUMENTS" of `docs/workflow.md` section 6 (if that is empty, start at Step 1). You are the coordinator: platform-dev does each step, you verify and commit.
+
+## 0. Preflight (only when starting at step 1)
+- Check tools and report versions: `git --version`, `dotnet --version` (10.x), `node --version`, `docker info` (respecting `DOCKER_HOST`), `npx supabase --version`.
+- If `.env.dev.local` doesn't exist, ask me where Docker runs. If it isn't this machine, create `.env.dev.local` from `.env.dev.local.example` with my answer (for example `DOCKER_IP=172.24.146.72`) and tell me which user environment variables to set for Testcontainers (`docker info` must work before continuing).
+- `git status` must be clean. Switch to `develop`, then create `chore/bootstrap` from it.
+
+## 1–5. One step at a time
+For each step from the start step through Step 5:
+1. Run platform-dev with: "Do docs/workflow.md section 6, Step N. Verify its Done condition."
+2. When it returns, run the step's Done check yourself (the command only; summarize the result).
+3. If it passes, commit with the step's commit message. If it fails, send the failure back to platform-dev once; if it still fails, stop and report.
+4. If platform-dev returned a human checklist, show it to me and wait for my "continue" before the next step.
+
+Run each step in a fresh platform-dev invocation; don't carry the previous step's output beyond a 3-line summary.
+
+## 6. Finish
+- Run all checks: `dotnet build backend -v q`, `dotnet test backend --logger "console;verbosity=minimal"`, `cd frontend && npm run typecheck && npm test -- --silent && npm run build:web`.
+- Report: steps done, commits, checks, and my remaining manual tasks (GitHub repo and branch protection, test environment accounts and secrets) as a checklist.
+- Print the commands to push `chore/bootstrap` and open a PR into `develop`. Never push yourself.
+```
+
 ### `.claude/skills/plan/SKILL.md`
 
 ```markdown
@@ -1230,6 +1381,20 @@ Run QA for story $ARGUMENTS on the current branch.
 3. Report a table: criterion, api verdict, app verdict, plus the bugs filed (id, severity, title) and both recommendations. Don't fix anything.
 ```
 
+### `.env.dev.local.example`
+
+```text
+# Copy to .env.dev.local (git-ignored) and adjust for your machine.
+# Read by scripts/dev-env and by the platform-dev agent.
+
+# Where Docker (and therefore local Supabase) runs. localhost if Docker Desktop runs on this machine.
+DOCKER_IP=172.24.146.72
+
+# How the browser or a phone reaches the API and Expo dev server on THIS machine.
+# Leave empty for localhost. Set to your LAN IP to test on a phone, or to the VM IP if you develop inside the VM.
+LAN_IP=
+```
+
 ### `scripts/guard-paths.mjs`
 
 ```js
@@ -1270,36 +1435,47 @@ process.stdin.on("end", () => {
 ```bash
 #!/usr/bin/env bash
 # Writes local config files and docs/local-credentials.md from `supabase status`.
-# Usage: ./scripts/dev-env.sh            (LAN_IP=192.168.1.20 ./scripts/dev-env.sh for phones)
+# Machine settings (DOCKER_IP, LAN_IP) come from .env.dev.local; see .env.dev.local.example.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root"
+if [ -f "$root/.env.dev.local" ]; then set -a; . "$root/.env.dev.local"; set +a; fi
+docker_ip="${DOCKER_IP:-localhost}"
+lan_ip="${LAN_IP:-}"
+app_host="${lan_ip:-localhost}"             # how the browser/phone reaches the API on this machine
+supa_host="${lan_ip:-$docker_ip}"           # how the browser/phone reaches Supabase
+
 eval "$(npx supabase status -o env)"
 ANON_KEY="${ANON_KEY:-${PUBLISHABLE_KEY:-}}"
 SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-${SECRET_KEY:-}}"
-host="${LAN_IP:-localhost}"
-mkdir -p "$root/backend/src/Handyman.Api" "$root/frontend"
+fix() { local v="${1//127.0.0.1/$docker_ip}"; echo "${v//localhost/$docker_ip}"; }
+API_URL="$(fix "$API_URL")"; STUDIO_URL="$(fix "$STUDIO_URL")"; DB_URL="$(fix "$DB_URL")"
 
+origins='"http://localhost:8081"'
+[ -n "$lan_ip" ] && origins="$origins, \"http://$lan_ip:8081\""
+
+mkdir -p "$root/backend/src/Handyman.Api" "$root/frontend"
 cat > "$root/backend/src/Handyman.Api/appsettings.Local.json" <<EOF
 {
-  "ConnectionStrings": { "Default": "Host=localhost;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
+  "ConnectionStrings": { "Default": "Host=$docker_ip;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
   "Supabase": { "Url": "$API_URL", "ServiceRoleKey": "$SERVICE_ROLE_KEY" },
   "Seed": { "Enabled": true },
-  "Cors": { "Origins": ["http://localhost:8081"] }
+  "Cors": { "Origins": [$origins] }
 }
 EOF
 
 cat > "$root/frontend/.env.local" <<EOF
-EXPO_PUBLIC_SUPABASE_URL=http://$host:54321
+EXPO_PUBLIC_SUPABASE_URL=http://$supa_host:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY
-EXPO_PUBLIC_API_URL=http://$host:5080/api
+EXPO_PUBLIC_API_URL=http://$app_host:5080/api
 EOF
 
 sed -e "s|{{API_URL}}|$API_URL|g" -e "s|{{STUDIO_URL}}|$STUDIO_URL|g" \
     -e "s|{{DB_URL}}|$DB_URL|g" -e "s|{{ANON_KEY}}|$ANON_KEY|g" \
-    -e "s|{{SERVICE_ROLE_KEY}}|$SERVICE_ROLE_KEY|g" \
+    -e "s|{{SERVICE_ROLE_KEY}}|$SERVICE_ROLE_KEY|g" -e "s|{{DOCKER_IP}}|$docker_ip|g" \
     "$root/docs/local-credentials.example.md" > "$root/docs/local-credentials.md"
 
+echo "Docker/Supabase host: $docker_ip; app host: $app_host"
 echo "Wrote appsettings.Local.json, frontend/.env.local and docs/local-credentials.md"
 ```
 
@@ -1307,43 +1483,53 @@ echo "Wrote appsettings.Local.json, frontend/.env.local and docs/local-credentia
 
 ```powershell
 # Writes local config files and docs/local-credentials.md from `supabase status`.
-# Usage: ./scripts/dev-env.ps1     ($env:LAN_IP = "192.168.1.20"; ./scripts/dev-env.ps1 for phones)
+# Machine settings (DOCKER_IP, LAN_IP) come from .env.dev.local; see .env.dev.local.example.
 $ErrorActionPreference = "Stop"
 $root = (Resolve-Path "$PSScriptRoot/..").Path
 Set-Location $root
+
+$cfg = @{}
+if (Test-Path "$root/.env.dev.local") {
+  Get-Content "$root/.env.dev.local" | ForEach-Object { if ($_ -match '^\s*([A-Z_]+)\s*=\s*(.*?)\s*$') { $cfg[$Matches[1]] = $Matches[2] } }
+}
+$dockerIp = if ($cfg["DOCKER_IP"]) { $cfg["DOCKER_IP"] } elseif ($env:DOCKER_IP) { $env:DOCKER_IP } else { "localhost" }
+$lanIp = if ($cfg["LAN_IP"]) { $cfg["LAN_IP"] } elseif ($env:LAN_IP) { $env:LAN_IP } else { "" }
+$appHost = if ($lanIp) { $lanIp } else { "localhost" }
+$supaHost = if ($lanIp) { $lanIp } else { $dockerIp }
 
 $vars = @{}
 npx supabase status -o env | ForEach-Object {
   if ($_ -match '^([A-Z_]+)="?(.*?)"?$') { $vars[$Matches[1]] = $Matches[2] }
 }
+function Fix([string]$v) { return $v.Replace("127.0.0.1", $dockerIp).Replace("localhost", $dockerIp) }
+$apiUrl = Fix $vars["API_URL"]; $studioUrl = Fix $vars["STUDIO_URL"]; $dbUrl = Fix $vars["DB_URL"]
 $anon = if ($vars["ANON_KEY"]) { $vars["ANON_KEY"] } else { $vars["PUBLISHABLE_KEY"] }
 $service = if ($vars["SERVICE_ROLE_KEY"]) { $vars["SERVICE_ROLE_KEY"] } else { $vars["SECRET_KEY"] }
-$hostName = if ($env:LAN_IP) { $env:LAN_IP } else { "localhost" }
-New-Item -ItemType Directory -Force "$root/backend/src/Handyman.Api", "$root/frontend" | Out-Null
+$origins = '"http://localhost:8081"'
+if ($lanIp) { $origins += ", `"http://${lanIp}:8081`"" }
 
+New-Item -ItemType Directory -Force "$root/backend/src/Handyman.Api", "$root/frontend" | Out-Null
 @"
 {
-  "ConnectionStrings": { "Default": "Host=localhost;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
-  "Supabase": { "Url": "$($vars["API_URL"])", "ServiceRoleKey": "$service" },
+  "ConnectionStrings": { "Default": "Host=$dockerIp;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
+  "Supabase": { "Url": "$apiUrl", "ServiceRoleKey": "$service" },
   "Seed": { "Enabled": true },
-  "Cors": { "Origins": ["http://localhost:8081"] }
+  "Cors": { "Origins": [$origins] }
 }
 "@ | Set-Content -Encoding utf8 "$root/backend/src/Handyman.Api/appsettings.Local.json"
 
 @"
-EXPO_PUBLIC_SUPABASE_URL=http://${hostName}:54321
+EXPO_PUBLIC_SUPABASE_URL=http://${supaHost}:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=$anon
-EXPO_PUBLIC_API_URL=http://${hostName}:5080/api
+EXPO_PUBLIC_API_URL=http://${appHost}:5080/api
 "@ | Set-Content -Encoding utf8 "$root/frontend/.env.local"
 
 (Get-Content -Raw "$root/docs/local-credentials.example.md").
-  Replace("{{API_URL}}", $vars["API_URL"]).
-  Replace("{{STUDIO_URL}}", $vars["STUDIO_URL"]).
-  Replace("{{DB_URL}}", $vars["DB_URL"]).
-  Replace("{{ANON_KEY}}", $anon).
-  Replace("{{SERVICE_ROLE_KEY}}", $service) |
+  Replace("{{API_URL}}", $apiUrl).Replace("{{STUDIO_URL}}", $studioUrl).Replace("{{DB_URL}}", $dbUrl).
+  Replace("{{ANON_KEY}}", $anon).Replace("{{SERVICE_ROLE_KEY}}", $service).Replace("{{DOCKER_IP}}", $dockerIp) |
   Set-Content -Encoding utf8 "$root/docs/local-credentials.md"
 
+Write-Host "Docker/Supabase host: $dockerIp; app host: $appHost"
 Write-Host "Wrote appsettings.Local.json, frontend/.env.local and docs/local-credentials.md"
 ```
 
@@ -1385,6 +1571,201 @@ Invoke-RestMethod -Method Post -Uri "$url/otp" -Headers $headers -ContentType "a
 $res = Invoke-RestMethod -Method Post -Uri "$url/verify" -Headers $headers -ContentType "application/json" `
   -Body (@{ phone = $Phone; token = "123456"; type = "sms" } | ConvertTo-Json)
 $res.access_token
+```
+
+### `deploy/Dockerfile.api`
+
+```dockerfile
+# API image (multi-arch: build with --platform linux/arm64 for Oracle Ampere, linux/amd64 elsewhere)
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+COPY backend/ backend/
+RUN dotnet publish backend/src/Handyman.Api -c Release -o /out -p:OpenApiGenerateDocuments=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY --from=build /out .
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
+USER app
+ENTRYPOINT ["dotnet", "Handyman.Api.dll"]
+```
+
+### `deploy/Dockerfile.web`
+
+```dockerfile
+# Web app: Expo web export served by Caddy, which also reverse-proxies the API
+FROM node:lts AS build
+WORKDIR /src/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+COPY docs/api/ /src/docs/api/
+ARG EXPO_PUBLIC_SUPABASE_URL
+ARG EXPO_PUBLIC_SUPABASE_ANON_KEY
+ARG EXPO_PUBLIC_API_URL=/api
+RUN npx expo export --platform web
+
+FROM caddy:2
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /src/frontend/dist /srv
+```
+
+### `deploy/Caddyfile`
+
+```caddyfile
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	@api path /api/* /health /admin* /r/*
+	handle @api {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Tune if the browser console reports CSP violations after a change.
+		Content-Security-Policy "default-src 'self'; connect-src 'self' {$SUPABASE_URL} wss://*.supabase.co; img-src 'self' data: blob: https://*.supabase.co; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'"
+	}
+}
+```
+
+### `deploy/docker-compose.test.yml`
+
+```yaml
+# Shared test environment. Copy to /opt/handyman/docker-compose.yml on the server,
+# next to a .env file (never committed) with the variables below.
+services:
+  api:
+    image: ghcr.io/${GHCR_OWNER}/handyman-api:${TAG:-develop}
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Test
+      ConnectionStrings__Default: ${DB_CONNECTION}
+      Supabase__Url: ${SUPABASE_URL}
+      Supabase__ServiceRoleKey: ${SUPABASE_SERVICE_ROLE_KEY}
+      Seed__Enabled: "true"
+
+  web:
+    image: ghcr.io/${GHCR_OWNER}/handyman-web:${TAG:-develop}
+    restart: unless-stopped
+    depends_on: [api]
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+      SUPABASE_URL: ${SUPABASE_URL}
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
+```
+
+### `deploy/test.env.example`
+
+```text
+# /opt/handyman/.env on the test server. Never commit the real file.
+GHCR_OWNER=darkman14
+TAG=develop
+SITE_ADDRESS=handyman-test.duckdns.org
+SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service role / secret key of the TEST project>
+DB_CONNECTION=Host=<session pooler host>;Port=5432;Database=postgres;Username=postgres.<project-ref>;Password=<db password>;SSL Mode=Require
+```
+
+### `.github/workflows/deploy-test.yml`
+
+```yaml
+name: deploy-test
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    # Public repo: use runs-on: ubuntu-24.04-arm and drop the QEMU step for much faster arm64 builds.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile.api
+          platforms: ${{ vars.TEST_PLATFORM || 'linux/arm64' }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/handyman-api:develop
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/Dockerfile.web
+          platforms: ${{ vars.TEST_PLATFORM || 'linux/arm64' }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/handyman-web:develop
+          build-args: |
+            EXPO_PUBLIC_SUPABASE_URL=${{ vars.TEST_SUPABASE_URL }}
+            EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ vars.TEST_SUPABASE_ANON_KEY }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.TEST_HOST }}
+          username: ${{ secrets.TEST_SSH_USER }}
+          key: ${{ secrets.TEST_SSH_KEY }}
+          script: |
+            cd /opt/handyman
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+```
+
+### `.github/workflows/keepalive-test.yml`
+
+```yaml
+# Free Supabase projects pause after 7 days without database activity.
+# /health runs a database query, so a daily call keeps the test project awake.
+name: keepalive-test
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --retry 3 --max-time 90 "https://${{ vars.TEST_SITE_ADDRESS }}/health"
 ```
 
 ### `docs/backlog/README.md`
