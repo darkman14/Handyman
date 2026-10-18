@@ -34,11 +34,13 @@ New-Item -ItemType Directory -Force "$root/backend/src/Handyman.Api", "$root/fro
 }
 "@ | Set-Content -Encoding utf8 "$root/backend/src/Handyman.Api/appsettings.Local.json"
 
-@"
+$envLocal = @"
 EXPO_PUBLIC_SUPABASE_URL=http://${supaHost}:54321
 EXPO_PUBLIC_SUPABASE_ANON_KEY=$anon
 EXPO_PUBLIC_API_URL=http://${appHost}:5080/api
-"@ | Set-Content -Encoding utf8 "$root/frontend/.env.local"
+"@
+# No BOM: Windows PowerShell 5.1 "utf8" adds one, which breaks the first variable name for Expo.
+[System.IO.File]::WriteAllText("$root/frontend/.env.local", $envLocal, (New-Object System.Text.UTF8Encoding $false))
 
 (Get-Content -Raw "$root/docs/local-credentials.example.md").
   Replace("{{API_URL}}", $apiUrl).Replace("{{STUDIO_URL}}", $studioUrl).Replace("{{DB_URL}}", $dbUrl).
