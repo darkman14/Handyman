@@ -108,11 +108,12 @@ namespace Handyman.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_bids");
 
-                    b.HasIndex("JobId")
-                        .HasDatabaseName("ix_bids_job_id");
-
                     b.HasIndex("WorkerId")
                         .HasDatabaseName("ix_bids_worker_id");
+
+                    b.HasIndex("JobId", "WorkerId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_bids_job_id_worker_id");
 
                     b.ToTable("bids", "app", t =>
                         {
@@ -377,14 +378,15 @@ namespace Handyman.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_ratings");
 
-                    b.HasIndex("JobId")
-                        .HasDatabaseName("ix_ratings_job_id");
-
                     b.HasIndex("RateeId")
                         .HasDatabaseName("ix_ratings_ratee_id");
 
                     b.HasIndex("RaterId")
                         .HasDatabaseName("ix_ratings_rater_id");
+
+                    b.HasIndex("JobId", "RaterId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ratings_job_id_rater_id");
 
                     b.ToTable("ratings", "app", t =>
                         {
@@ -492,6 +494,10 @@ namespace Handyman.Api.Data.Migrations
 
                     b.HasIndex("HomeAreaId")
                         .HasDatabaseName("ix_users_home_area_id");
+
+                    b.HasIndex("Phone")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_phone");
 
                     b.ToTable("users", "app", t =>
                         {

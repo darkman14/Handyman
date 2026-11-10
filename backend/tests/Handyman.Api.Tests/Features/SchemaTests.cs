@@ -171,8 +171,7 @@ public class SchemaTests(SchemaFixture fx) : IClassFixture<SchemaFixture>
     {
         await using var db = fx.NewContext();
         var migrations = db.Database.GetMigrations().ToList();
-        migrations.Count.ShouldBe(1);
-        migrations[0].ShouldEndWith("_Initial");
+        migrations[0].ShouldEndWith("_Initial"); // later migrations (US-0012 onward) build on it
 
         var before = await fx.QueryStrings("SELECT \"MigrationId\" FROM app.\"__EFMigrationsHistory\"");
         await db.Database.MigrateAsync(); // simulates an API restart

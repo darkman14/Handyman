@@ -3,7 +3,7 @@ id: US-0012
 title: The database refuses duplicates that break core rules
 epic: E01
 feature: F01.1
-status: ready
+status: in-progress
 ---
 
 ## Story

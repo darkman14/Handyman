@@ -13,6 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
     {
         b.Property(x => x.Id).ValueGeneratedNever(); // = Supabase auth user id
         b.Property(x => x.Phone).HasMaxLength(20);
+        b.HasIndex(x => x.Phone).IsUnique(); // stored normalized to +381...
         b.Property(x => x.Role).HasConversion<string>().HasMaxLength(20);
         b.Property(x => x.Name).HasMaxLength(100);
         b.HasOne<Area>().WithMany().HasForeignKey(x => x.HomeAreaId).OnDelete(DeleteBehavior.Restrict);
@@ -121,7 +122,7 @@ public class BidConfiguration : IEntityTypeConfiguration<Bid>
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
         b.HasOne<Job>().WithMany().HasForeignKey(x => x.JobId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<User>().WithMany().HasForeignKey(x => x.WorkerId).OnDelete(DeleteBehavior.Restrict);
-        b.HasIndex(x => x.JobId);
+        b.HasIndex(x => new { x.JobId, x.WorkerId }).IsUnique(); // one bid per worker per job, withdrawn included
         b.HasIndex(x => x.WorkerId);
         b.ToTable(t =>
         {
@@ -140,6 +141,7 @@ public class RatingConfiguration : IEntityTypeConfiguration<Rating>
         b.Property(x => x.Comment).HasMaxLength(1000);
         b.HasOne<Job>().WithMany().HasForeignKey(x => x.JobId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<User>().WithMany().HasForeignKey(x => x.RaterId).OnDelete(DeleteBehavior.Restrict);
+        b.HasIndex(x => new { x.JobId, x.RaterId }).IsUnique(); // one rating per rater per job
         b.HasOne<User>().WithMany().HasForeignKey(x => x.RateeId).OnDelete(DeleteBehavior.Restrict);
         b.ToTable(t => t.HasCheckConstraint("ck_ratings_stars", "stars BETWEEN 1 AND 5"));
     }
