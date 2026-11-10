@@ -1,0 +1,1 @@
+- [Backlog naming and decisions](project_backlog_naming.md) — E02 ids/folder, decided error codes and rules, UI copy, seeded-data mapping, E01 dependency handling
