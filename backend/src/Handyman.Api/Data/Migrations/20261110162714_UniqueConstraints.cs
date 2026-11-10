@@ -41,10 +41,11 @@ namespace Handyman.Api.Data.Migrations
                 columns: new[] { "job_id", "worker_id" },
                 unique: true);
 
-            // Referral codes are unique regardless of letter case and surrounding spaces.
-            // Not modelled in EF (no expression indexes); the model snapshot is unaffected.
+            // Referral codes are unique regardless of letter case and any whitespace (space, tab,
+            // newline, non-breaking space U+00A0 anywhere in the value). Lookups must use the same
+            // expression. Not modelled in EF (no expression indexes); the model snapshot is unaffected.
             migrationBuilder.Sql(
-                "CREATE UNIQUE INDEX ux_stores_referral_code_ci ON app.stores (lower(btrim(referral_code)));");
+                @"CREATE UNIQUE INDEX ux_stores_referral_code_ci ON app.stores (lower(regexp_replace(referral_code, '[\s ]+', '', 'g')));");
         }
 
         /// <inheritdoc />
