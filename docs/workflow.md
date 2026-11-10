@@ -104,9 +104,9 @@ All tables live in schema `app`. Supabase's own `auth` and `storage` schemas are
 | areas | id, name, kind (city, municipality, neighborhood), parent_id — a tree; jobs and worker coverage point at neighborhoods |
 | worker_areas | worker_id, area_id (neighborhood) |
 | stores | id, name, area_id, referral_code |
-| jobs | id, number, client_id, trade_id, area_id (neighborhood), street, house_number, entrance, floor, apartment, address_note, store_id, status, accepted_bid_id, created_at, finished_at, closed_at |
+| jobs | id, number, client_id, trade_id, title, description, area_id (neighborhood), street, house_number, entrance, floor, apartment, address_note, store_id, status, accepted_bid_id, created_at, finished_at, closed_at |
 | job_photos | id, job_id, storage_path |
-| bids | id, job_id, worker_id, arrival_window, diagnostic_fee, hourly_rate, note, status (active, accepted, rejected, withdrawn), created_at |
+| bids | id, job_id, worker_id, arrival_window_start, arrival_window_end (UTC), diagnostic_fee, hourly_rate, note, status (active, accepted, rejected, withdrawn), created_at |
 | ratings | id, job_id, rater_id, ratee_id, stars, comment, created_at — unique (job_id, rater_id) |
 | notifications | id, user_id, type, job_id, created_at, read_at |
 | device_tokens | id, user_id, token, platform |
@@ -140,7 +140,7 @@ All endpoints except `/r/{code}` and `/health` are served under `/api` (map them
 
 Sign-in, SMS codes and token refresh are handled by Supabase Auth, so the API has no auth endpoints.
 
-Errors use RFC 7807 problem details with a stable `code` field (`profile_missing`, `rating_pending`, `job_not_open`, `already_bid`, `not_allowed`, `user_blocked`). A missing or invalid token, or one with no valid `sub`, returns `401`; a blocked user returns `403` with code `user_blocked`.
+Errors use RFC 7807 problem details with a stable `code` field (`profile_missing`, `rating_pending`, `job_not_open`, `already_bid`, `not_allowed`, `user_blocked`, `validation_failed` with per-field errors, and `<thing>_not_found` such as `job_not_found`). On the public endpoints (`/trades`, `/areas`, `/r/{code}`, `/health`) an expired or invalid token is treated as anonymous, but a blocked user's valid token still gets `403`. On every other endpoint a missing or invalid token, or one with no valid `sub`, returns `401`; a blocked user returns `403` with code `user_blocked`.
 
 ---
 
@@ -616,9 +616,9 @@ Each slice is done only when its backend tests, frontend tests and CI pass. Ever
 
 | # | Slice | Backend | Frontend | Required tests |
 | --- | --- | --- | --- | --- |
-| 1 | Domain + data + CQRS | Entities, `JobStatus`, `AppDbContext` and `ReadDbContext` in schema `app`, first migration with RLS enabled, seed (trades, area tree for the pilot city, 1 store), the `Cqrs/` contracts, decorators, `PendingPushes` and `AddCqrs` | — | `JobTests`: every allowed and forbidden transition; rating closes only when both exist. `DecoratorTests` and `ArchitectureTests` as described in the CQRS section |
+| 1 | Domain + data + CQRS | Entities, `JobStatus`, `AppDbContext` and `ReadDbContext` in schema `app`, first migration with RLS enabled, seed (trades, area tree for the pilot city, 1 store) and the public `GET /trades` and `GET /areas?parentId=`, the `Cqrs/` contracts, decorators, `PendingPushes` and `AddCqrs` | — | `JobTests`: every allowed and forbidden transition; rating closes only when both exist. `DecoratorTests` and `ArchitectureTests` as described in the CQRS section |
 | 2 | Auth + dev users | Supabase JWT validation, `CurrentUser` from `sub`, blocked-user check. `DevSeeder` (Development or Test environment with `Seed:Enabled`, never Production): applies migrations, then creates every user in `DevUsers.cs` through the Supabase Auth admin API (`phone_confirm: true`), reusing an existing auth user with the same phone, and upserts the matching `app.users` row; `DevSampleJobs` adds sample jobs only when no jobs exist | Sign-in and code screens with `supabase-js`, platform session storage, auth guard in `_layout`, token attached to API calls | API: `401` for missing, expired, wrong-issuer and wrong-audience tokens; `403` for blocked users; `DevUsers` and the `[auth.sms.test_otp]` numbers in `supabase/config.toml` match exactly (a test parses the file); the seeder refuses to run in Production. App: screen tests for both forms with a mocked Supabase client; manual check with local test OTPs on phone and web |
-| 3 | Profile + reference data | `GET /me` (`profile_missing` on first sign-in), `PUT /me`, `/trades`, `/areas`, worker trades and covered neighborhoods | Onboarding after first sign-in, profile screen, trade picker, area picker (city → municipality → neighborhoods; picking a municipality selects all its neighborhoods), mode switch | Worker without approval can't list jobs; coverage stored at neighborhood level |
+| 3 | Profile + reference data | `GET /me` (`profile_missing` on first sign-in), `PUT /me`, worker trades and covered neighborhoods | Onboarding after first sign-in, profile screen, trade picker, area picker (city → municipality → neighborhoods; picking a municipality selects all its neighborhoods), mode switch | Worker without approval can't list jobs; coverage stored at neighborhood level |
 | 4 | Post a job | `POST /jobs` with structured address, `GET /jobs/mine`, Supabase Storage signed upload/download URLs, store code | New request form with neighborhood picker and address fields, My requests list | Validation errors (neighborhood, street, house number required), rating gate returns `rating_pending` |
 | 5 | Open jobs + bids | `GET /jobs/open`, `POST /jobs/{id}/bids`, withdraw, `GET /bids/mine` | Open jobs list showing neighborhood + street, bid form, My bids | Matching by trade and neighborhood, one bid per job, rating gate, open-job and bid responses contain no house number, entrance, floor, apartment or note |
 | 6 | Hire | `HireBid` command with the `xmin` concurrency token | Bid comparison on job detail, hire button, full address + call button for the hired worker | Two concurrent hires → one `200`, one `409`; hired worker gets the full address, other bidders still get street only |

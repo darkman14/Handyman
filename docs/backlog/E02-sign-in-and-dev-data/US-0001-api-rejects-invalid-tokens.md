@@ -10,16 +10,17 @@ status: ready
 As a client or worker, I want the API to act only on requests that carry my valid Supabase session, so that nobody else can post, bid or read data in my name.
 
 ## Acceptance criteria
-- **AC1** Given a request to any endpoint under `/api` with no `Authorization` header, when it is sent, then the response is `401`.
-- **AC2** Given a token that is otherwise valid but expired, when it is sent to an `/api` endpoint, then the response is `401`.
-- **AC3** Given a token whose issuer is not this project's Supabase Auth (`<Supabase URL>/auth/v1`), when it is sent, then the response is `401`.
-- **AC4** Given a token whose audience is not `authenticated`, whose signature does not verify, or whose `sub` is missing or not a GUID, when it is sent, then the response is `401`.
+- **AC1** Given a request to any endpoint under `/api` except the public reference-data endpoints (`GET /api/trades`, `GET /api/areas`) with no `Authorization` header, when it is sent, then the response is `401`.
+- **AC2** Given a token that is otherwise valid but expired, when it is sent to an authenticated `/api` endpoint, then the response is `401`.
+- **AC3** Given a token whose issuer is not this project's Supabase Auth (`<Supabase URL>/auth/v1`), when it is sent to an authenticated endpoint, then the response is `401`.
+- **AC4** Given a token whose audience is not `authenticated`, whose signature does not verify, or whose `sub` is missing or not a GUID, when it is sent to an authenticated endpoint, then the response is `401`.
 - **AC5** Given a valid, unexpired token for a seeded user, when it is sent to an authenticated endpoint (today: `GET /api/me`), then the response is not `401`; and given no token at all, `GET /health` still returns `200`.
 
 ## Business rules
 - The app sends the Supabase access token; the API validates it and maps `sub` to `app.users.id` (workflow.md section 1, Auth).
 - The API has no sign-in endpoints (workflow.md section 4).
 - A missing or invalid token, or one with no valid `sub`, returns `401` (workflow.md section 4).
+- Public reference-data endpoints (`GET /api/trades`, `GET /api/areas`) are open to anyone; an expired or garbage token on them is treated as anonymous, not `401` (E01 US-0019 decision 2026-11-10).
 - Tests never call a real Supabase project; tokens are signed with a test key (workflow.md section 1, Tests).
 
 ## UI notes
@@ -29,16 +30,18 @@ As a client or worker, I want the API to act only on requests that carry my vali
 - Mapping the caller to `app.users` and blocking (US-0002).
 - Profile shape of `GET /me` (E03).
 - A problem-details body on `401`: status code is enough for this story.
+- The public reference-data endpoints themselves (E01 US-0019, US-0020).
 
 ## Test notes
 - Seeded users: any, e.g. Ana Marković +381600000201 (client); get a real local token with `./scripts/dev-token.sh +381600000201` for the manual check.
-- Edge cases: token with a missing, empty or non-GUID `sub` (all `401`, AC4); `Bearer` prefix missing or misspelled; token that expires a few seconds in the future (should pass) vs. a few seconds in the past (clock skew tolerance is a dev choice, but must be documented in Dev notes); a Supabase `anon` key sent as the bearer token (must be `401`); `GET /health` with a garbage token.
+- Edge cases: token with a missing, empty or non-GUID `sub` (all `401`, AC4); `Bearer` prefix missing or misspelled; token that expires a few seconds in the future (should pass) vs. a few seconds in the past (clock skew tolerance is a dev choice, but must be documented in Dev notes); a Supabase `anon` key sent as the bearer token (must be `401`); `GET /health` with a garbage token; once US-0019/US-0020 exist, `GET /api/trades` and `GET /api/areas` with no token or a garbage token return `200`, not `401`.
 
 ## Open questions
 - none
 
 ## Decisions
 - 2026-11-10: a token with a valid signature but a missing or malformed `sub` is treated as invalid and gets `401` (now in AC4 and workflow.md section 4).
+- 2026-11-10: the public reference-data endpoints are excluded from the `401` rule; an expired or garbage token on a public endpoint is treated as anonymous (E01 US-0019 decision; now in AC1 to AC4).
 
 ## API contract
 <Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>

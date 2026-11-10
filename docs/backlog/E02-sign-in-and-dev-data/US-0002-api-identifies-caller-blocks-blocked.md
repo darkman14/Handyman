@@ -3,7 +3,7 @@ id: US-0002
 title: API identifies the caller and refuses blocked users
 epic: E02
 feature: F02.1
-status: draft
+status: ready
 ---
 
 ## Story
@@ -34,8 +34,11 @@ As a client or worker, I want the platform to shut out users an admin has blocke
 - Edge cases: `blocked_at` in the future (any non-null `blocked_at` counts as blocked, per AC2); block then unblock (clear `blocked_at`) → next call succeeds; blocked admin; token for a user deleted from `app.users`.
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: this story reads and filters on `app.users` (`id`, `blocked_at`), which comes from E01 (entities and first migration). E01 has no stories yet. Move to `ready` once the E01 story that delivers `app.users` exists and is `ready`.
+- none
+
+## Dependencies
+- Depends on US-0011 (`app.users` with `id` and `blocked_at`) and US-0001 (token validation). US-0017 supplies the problem-details format.
+- The `403 user_blocked` also applies on the public reference-data endpoints (US-0019, US-0020) for a valid token of a blocked user.
 
 ## Decisions
 - 2026-11-10: a blocked user gets `403` with the new code `user_blocked`, distinct from `not_allowed`, so the app can show the blocked-account message (now in workflow.md section 4).

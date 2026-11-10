@@ -3,7 +3,7 @@ id: US-0005
 title: Seeded workers have trades, coverage and approval state
 epic: E02
 feature: F02.2
-status: draft
+status: ready
 ---
 
 ## Story
@@ -33,8 +33,10 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 - Edge cases: a neighborhood added to Vračar in the reference seed after the first seed must not appear in seeded workers' coverage after a restart (AC4); clients and the admin must have no worker profile, trades or coverage.
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: trades, the area tree and the worker profile, trade and coverage tables come from E01 (entities, first migration, reference seed), and the seeded users from US-0003. E01 has no stories yet. Move to `ready` once those E01 stories exist and are `ready`.
+- none
+
+## Dependencies
+- Depends on US-0011 (worker profile, trade and coverage tables), US-0018 (trades and area tree) and US-0003 (seeded users).
 
 ## Decisions
 - 2026-11-10: seeded coverage is fixed at first seed; the seeder never changes existing worker data, so neighborhoods added to the area tree later are not added on restart (now in AC4).

@@ -3,7 +3,7 @@ id: US-0004
 title: Seeder runs only where it is allowed
 epic: E02
 feature: F02.2
-status: draft
+status: ready
 ---
 
 ## Story
@@ -31,8 +31,11 @@ As the product owner, I want the development seeder to be impossible to run in P
 - Edge cases: environment names in other casing (`production`, `PRODUCTION`); an unknown environment name such as `Staging` (must not seed, AC1); `Seed:Enabled` set via environment variable `Seed__Enabled=true` in Production.
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: AC1 and AC3 check `app.users` and the first migration, which come from E01. E01 has no stories yet. Move to `ready` once the E01 migration story exists and is `ready`.
+- none
+
+## Dependencies
+- Depends on US-0011 (`app.users` and the first migration, checked in AC1 and AC3).
+- Reference data (US-0018) is not seeder data: it is present in every environment, so AC1's "nothing seeded" means no seeded users, profiles or sample jobs.
 
 ## Decisions
 - 2026-11-10: the seeder runs only in Development and Test; every other environment (Production, `Staging`, unknown names) is refused like Production (now in AC1).

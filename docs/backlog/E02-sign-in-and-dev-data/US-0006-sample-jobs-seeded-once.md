@@ -3,14 +3,14 @@ id: US-0006
 title: Sample jobs are seeded once
 epic: E02
 feature: F02.2
-status: draft
+status: ready
 ---
 
 ## Story
 As a developer or QA engineer, I want a few sample jobs in typical states seeded on first start, so that bid comparison, the "no bids yet" state, address privacy and the rating gate can be demoed and tested without creating data by hand.
 
 ## Acceptance criteria
-- **AC1** Given a database with no jobs, when the seeder runs, then Ana Marković has one `Open` Appliance repair job ("dishwasher") in Čubura, with exactly two `active` bids: one from Jelena Petrović and one from Nikola Đorđević, each with an arrival window, a diagnostic fee and an hourly rate in whole RSD.
+- **AC1** Given a database with no jobs, when the seeder runs, then Ana Marković has one `Open` Appliance repair job ("dishwasher") in Čubura, with a title and a description, and exactly two `active` bids: one from Jelena Petrović and one from Nikola Đorđević, each with an arrival window (start and end in UTC, end after start), a diagnostic fee and an hourly rate in whole RSD.
 - **AC2** Given a database with no jobs, when the seeder runs, then Milan Kostić has one `Open` Electrical job in Bežanijska kosa with no bids.
 - **AC3** Given a database with no jobs, when the seeder runs, then Ivana Nikolić has one `Done` Appliance repair job in Đeram, hired to Jelena Petrović (her bid `accepted`, `finished_at` set), with no ratings from either side.
 - **AC4** Given the seeder has run, when any sample job is read, then it has neighborhood, street and house number, and also entrance, floor, apartment and an address note filled, so address privacy can be tested on every field.
@@ -35,11 +35,13 @@ As a developer or QA engineer, I want a few sample jobs in typical states seeded
 
 ## Test notes
 - Seeded users: Ana Marković +381600000201, Milan Kostić +381600000202, Ivana Nikolić +381600000203 (clients); Jelena Petrović +381600000102, Nikola Đorđević +381600000103 (workers); Marko Jovanović +381600000101 is the matched worker for Milan's job.
-- Edge cases: delete all jobs and restart → the three sample jobs come back; delete only one sample job and restart → nothing comes back (AC5); jobs have distinct job numbers; created/finished times are in UTC and `finished_at` is after `created_at`.
+- Edge cases: delete all jobs and restart → the three sample jobs come back; delete only one sample job and restart → nothing comes back (AC5); jobs have distinct, increasing job numbers; arrival windows end after they start; created/finished times are in UTC and `finished_at` is after `created_at`.
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: jobs, bids, trades and the area tree come from E01 (entities, first migration, reference seed), and the clients and workers from US-0003 and US-0005. E01 has no stories yet. Move to `ready` once those E01 stories exist and are `ready`.
+- none
+
+## Dependencies
+- Depends on US-0011 (jobs and bids tables, job title and description, arrival window as a UTC start/end range), US-0012 (job numbers, one bid per worker), US-0013 (Done job with an accepted bid), US-0018 (trades and area tree), US-0003 (clients) and US-0005 (workers).
 
 ## Decisions
 - 2026-11-10: no `Assigned` sample job for now; the seeded data table in workflow.md stays as is, and "hired worker sees full address" is tested by hiring on Ana's job first.
