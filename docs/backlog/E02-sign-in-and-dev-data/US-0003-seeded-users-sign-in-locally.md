@@ -3,7 +3,7 @@ id: US-0003
 title: Seeded users can sign in locally
 epic: E02
 feature: F02.2
-status: draft
+status: ready
 ---
 
 ## Story
@@ -41,8 +41,10 @@ As a developer or QA engineer, I want the 10 seeded users to exist in local Supa
 - Edge cases: restart the API while local Supabase is down (startup should fail loudly or log a clear error; it must not create half a cast silently — record the behavior in Dev notes); delete one auth user in Supabase Studio and restart (it should come back); phone format differences (`+381 60 000 0101` vs `381600000101` in `config.toml`) must not cause a mismatch in AC5; tests must not call a real Supabase project (fake the admin API); only Supabase Auth wiped while `app.users` is kept (unsupported: the seeder must not create a second `app.users` row for the same phone or silently re-key; how it reports the mismatch is a dev choice recorded in Dev notes); after deploying to the shared test environment, sign in there as Ana Marković +381600000201 with `123456`.
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: the seeder writes `app.users` rows (and clients' home neighborhoods from the area tree), which come from E01 (entities, first migration, reference seed). E01 has no stories yet. Move to `ready` once the E01 stories for `app.users` and the area tree exist and are `ready`.
+- none
+
+## Dependencies
+- Depends on US-0011 (`app.users`), US-0012 (unique phone) and US-0018 (area tree with the clients' neighborhoods). AC4 also needs US-0002 (`GET /api/me` returns the caller's id).
 
 ## Decisions
 - 2026-11-10: the seeder also runs on the shared test environment (`Test`); AC1–AC4 apply there, with the test numbers configured in the `handyman-test` Supabase dashboard as in workflow.md section 6, Step 5.

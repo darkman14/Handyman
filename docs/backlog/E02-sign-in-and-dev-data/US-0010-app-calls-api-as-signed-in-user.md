@@ -3,7 +3,7 @@ id: US-0010
 title: App calls the API as the signed-in user
 epic: E02
 feature: F02.3
-status: draft
+status: ready
 ---
 
 ## Story
@@ -39,8 +39,10 @@ As a signed-in client or worker, I want the app to talk to the Handyman API as m
 - Edge cases: several API calls failing with `401` at once must sign out only once; `403` with a different code (e.g. `not_allowed`) must not show the blocked screen; API base URL on a phone on the LAN (not `localhost`).
 
 ## Open questions
-- No open product questions.
-- Kept `draft` because of an unmet dependency: AC1, AC3 and AC4 need the API side of US-0002 (`GET /api/me` resolving the caller, `403` `user_blocked`), and the AC4 check needs Petar seeded in `app.users` (US-0003). Both are `draft` waiting on E01, which has no stories yet. Move to `ready` once US-0002 is `ready`.
+- none
+
+## Dependencies
+- Depends on US-0002 (`GET /api/me` resolving the caller, `403 user_blocked`), US-0003 (Petar seeded in `app.users` for the AC4 check) and US-0008/US-0009 (signed-in session and refresh).
 
 ## Decisions
 - 2026-11-10: the blocked-user code is `user_blocked` (decided in US-0002; now in AC4).
