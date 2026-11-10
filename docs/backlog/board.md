@@ -12,7 +12,7 @@
 | US-0008 | Sign in with the SMS code | E02 | ready |
 | US-0009 | Stay signed in and sign out | E02 | ready |
 | US-0010 | App calls the API as the signed-in user | E02 | ready |
-| US-0011 | Business tables exist in a locked-down app schema | E01 | ready |
+| US-0011 | Business tables exist in a locked-down app schema | E01 | in-progress |
 | US-0012 | The database refuses duplicates that break core rules | E01 | ready |
 | US-0013 | A job moves only along the allowed lifecycle | E01 | ready |
 | US-0014 | A job closes only when both sides have rated | E01 | ready |

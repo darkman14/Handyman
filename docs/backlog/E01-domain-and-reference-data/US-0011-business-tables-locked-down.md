@@ -3,7 +3,7 @@ id: US-0011
 title: Business tables exist in a locked-down app schema
 epic: E01
 feature: F01.1
-status: ready
+status: in-progress
 ---
 
 ## Story
