@@ -10,13 +10,13 @@ status: draft
 As the product owner, I want the development seeder to be impossible to run in Production, so that fake users with a known sign-in code can never appear in the live app.
 
 ## Acceptance criteria
-- **AC1** Given the API starts in the Production environment, even with `Seed:Enabled` true, when startup runs, then no seeded user, profile or sample job is created, and the attempt is refused with a logged error (a test proves this).
+- **AC1** Given the API starts in Production, or in any environment other than Development and Test (e.g. `Staging`), even with `Seed:Enabled` true, when startup runs, then no seeded user, profile or sample job is created, and the attempt is refused with a logged error (a test proves this).
 - **AC2** Given the API starts in Development or Test with `Seed:Enabled` false or missing, when startup runs, then nothing is seeded.
 - **AC3** Given the API starts in Development or Test with `Seed:Enabled` true, when startup runs, then migrations are applied first and the seed runs after them (a database with no migrations ends up migrated and seeded).
 - **AC4** Given the OpenAPI document is generated at build time (`dotnet build backend`), when the build runs, then no seeding and no Supabase call happens.
 
 ## Business rules
-- `DevSeeder` runs in Development or Test with `Seed:Enabled`, never in Production (workflow.md section 7, slice 2).
+- `DevSeeder` runs in Development or Test with `Seed:Enabled`, never in Production (workflow.md section 7, slice 2). Every other environment name is refused like Production.
 - Development (and Test) startup applies migrations and seeds (workflow.md section 1, Local data).
 
 ## UI notes
@@ -28,10 +28,14 @@ As the product owner, I want the development seeder to be impossible to run in P
 
 ## Test notes
 - Seeded users: none needed; assert on an empty `app.users` and no calls to the (faked) Supabase admin API.
-- Edge cases: environment names in other casing (`production`, `PRODUCTION`); an unknown environment name such as `Staging` (should not seed); `Seed:Enabled` set via environment variable `Seed__Enabled=true` in Production.
+- Edge cases: environment names in other casing (`production`, `PRODUCTION`); an unknown environment name such as `Staging` (must not seed, AC1); `Seed:Enabled` set via environment variable `Seed__Enabled=true` in Production.
 
 ## Open questions
-- Should environments other than Development and Test (e.g. a future `Staging`) be refused like Production? Proposed: yes, seed only in Development and Test.
+- No open product questions.
+- Kept `draft` because of an unmet dependency: AC1 and AC3 check `app.users` and the first migration, which come from E01. E01 has no stories yet. Move to `ready` once the E01 migration story exists and is `ready`.
+
+## Decisions
+- 2026-11-10: the seeder runs only in Development and Test; every other environment (Production, `Staging`, unknown names) is refused like Production (now in AC1).
 
 ## API contract
 <Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>

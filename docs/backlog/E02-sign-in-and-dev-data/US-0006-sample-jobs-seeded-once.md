@@ -31,13 +31,18 @@ As a developer or QA engineer, I want a few sample jobs in typical states seeded
 - Photos on sample jobs.
 - Seeded ratings, notifications or store referrals on jobs.
 - Jobs for Petar Stojanović and Mila Pavlović (they have none by design).
+- A sample job in the `Assigned` state: testers hire a bidder on Ana's job to reach it.
 
 ## Test notes
 - Seeded users: Ana Marković +381600000201, Milan Kostić +381600000202, Ivana Nikolić +381600000203 (clients); Jelena Petrović +381600000102, Nikola Đorđević +381600000103 (workers); Marko Jovanović +381600000101 is the matched worker for Milan's job.
 - Edge cases: delete all jobs and restart → the three sample jobs come back; delete only one sample job and restart → nothing comes back (AC5); jobs have distinct job numbers; created/finished times are in UTC and `finished_at` is after `created_at`.
 
 ## Open questions
-- Should the Assigned state also have a sample job (no seeded job is Assigned today, so "hired worker sees full address" needs a tester to hire first)? Proposed: not now; keep the table in workflow.md as is.
+- No open product questions.
+- Kept `draft` because of an unmet dependency: jobs, bids, trades and the area tree come from E01 (entities, first migration, reference seed), and the clients and workers from US-0003 and US-0005. E01 has no stories yet. Move to `ready` once those E01 stories exist and are `ready`.
+
+## Decisions
+- 2026-11-10: no `Assigned` sample job for now; the seeded data table in workflow.md stays as is, and "hired worker sees full address" is tested by hiring on Ana's job first.
 
 ## API contract
 <Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>

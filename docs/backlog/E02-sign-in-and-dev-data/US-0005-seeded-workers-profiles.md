@@ -13,7 +13,7 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 - **AC1** Given the seeder has run, when the worker data is read, then Marko Jovanović has trades Electrical and Heating & AC; Jelena Petrović has Appliance repair; Nikola Đorđević has Appliance repair and Plumbing; Stefan Ilić has Painting and Carpentry (and no other trades).
 - **AC2** Given the seeder has run, when worker coverage is read, then each worker covers every neighborhood of the municipalities listed for them in workflow.md section 7 (Marko: Novi Beograd, Zvezdara; Jelena: Vračar, Zvezdara; Nikola: Vračar, Novi Beograd; Stefan: Vračar), stored as neighborhood rows only, never as municipality or city rows.
 - **AC3** Given the seeder has run, when worker profiles are read, then Marko, Jelena and Nikola have a worker profile with an approval time set, and Stefan has a worker profile with no approval time (pending).
-- **AC4** Given the seeder has run more than once, when trades, coverage and profiles are read, then there are no duplicates and Stefan is still pending (a restart never approves him or overwrites an approval an admin made later).
+- **AC4** Given the seeder has run more than once, when trades, coverage and profiles are read, then there are no duplicates, coverage is what the first seed wrote, and Stefan is still pending (a restart never changes existing worker data: it never approves him or overwrites an approval an admin made later).
 
 ## Business rules
 - Worker coverage is stored at neighborhood level (workflow.md section 1, Location; section 7, slice 3 tests).
@@ -30,10 +30,14 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 
 ## Test notes
 - Seeded users: Marko Jovanović +381600000101, Jelena Petrović +381600000102, Nikola Đorđević +381600000103, Stefan Ilić +381600000104.
-- Edge cases: a neighborhood added to Vračar in the reference seed later should be checked for whether it appears in coverage after restart (see Open questions); clients and the admin must have no worker profile, trades or coverage.
+- Edge cases: a neighborhood added to Vračar in the reference seed after the first seed must not appear in seeded workers' coverage after a restart (AC4); clients and the admin must have no worker profile, trades or coverage.
 
 ## Open questions
-- If the area tree gains new neighborhoods later, should a restart add them to the seeded workers' coverage, or is coverage fixed at first seed? Proposed: fixed at first seed (seeder never changes existing worker data), consistent with AC4.
+- No open product questions.
+- Kept `draft` because of an unmet dependency: trades, the area tree and the worker profile, trade and coverage tables come from E01 (entities, first migration, reference seed), and the seeded users from US-0003. E01 has no stories yet. Move to `ready` once those E01 stories exist and are `ready`.
+
+## Decisions
+- 2026-11-10: seeded coverage is fixed at first seed; the seeder never changes existing worker data, so neighborhoods added to the area tree later are not added on restart (now in AC4).
 
 ## API contract
 <Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>

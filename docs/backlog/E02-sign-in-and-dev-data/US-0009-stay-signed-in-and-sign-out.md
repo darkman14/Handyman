@@ -3,7 +3,7 @@ id: US-0009
 title: Stay signed in and sign out
 epic: E02
 feature: F02.3
-status: draft
+status: ready
 ---
 
 ## Story
@@ -19,6 +19,7 @@ As a busy electrician, I want the app to keep me signed in between uses and only
 ## Business rules
 - Session storage is platform-specific and lives in `src/lib/*.native.ts` / `*.web.ts` (workflow.md section 1, Frontend; CLAUDE.md hard rules).
 - The app uses Supabase only for sign-in (workflow.md section 2, Business rules).
+- Session lifetime on every platform, including shared browsers, follows Supabase defaults (refresh token, no forced timeout) for the MVP.
 
 ## UI notes
 - While the stored session is being restored at startup, show a full-screen loading state (no flash of the sign-in screen).
@@ -26,7 +27,7 @@ As a busy electrician, I want the app to keep me signed in between uses and only
 - `src/ui` components only; strings in `src/i18n/en.ts`.
 
 ## Out of scope
-- Signing out other devices; "remember me" options.
+- Signing out other devices; "remember me" options; a forced session timeout on web.
 - Handling `401`/`403` from the API (US-0010).
 - Where "Sign out" ends up in the final navigation (E03 profile screen).
 
@@ -36,7 +37,10 @@ As a busy electrician, I want the app to keep me signed in between uses and only
 - Edge cases: two browser tabs, sign out in one then act in the other; access token expired while the app was closed (should refresh silently); airplane mode at startup with a valid stored session; web private window.
 
 ## Open questions
-- On a shared browser, how long should a web session last? Proposed: Supabase defaults (refresh token, no forced timeout) for the MVP.
+- none
+
+## Decisions
+- 2026-11-10: web sessions, including on shared browsers, use Supabase defaults (refresh token, no forced timeout) for the MVP; users sign out explicitly (AC4).
 
 ## API contract
 <Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>

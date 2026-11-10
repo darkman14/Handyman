@@ -3,7 +3,7 @@ id: US-0008
 title: Sign in with the SMS code
 epic: E02
 feature: F02.3
-status: draft
+status: ready
 ---
 
 ## Story
