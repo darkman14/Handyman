@@ -86,7 +86,7 @@ Open ──(client hires a bid)──> Assigned ──(either side finishes)─�
 - The other side's rating is returned only when both ratings exist.
 - Address visibility: the client always sees everything; bidders and matched workers get `neighborhood` and `street` only; the hired worker also gets `houseNumber`, `entrance`, `floor`, `apartment`, `addressNote` and the client's phone. The response DTO is chosen per role, so hidden fields are never serialized.
 - SMS code limits are set in Supabase Auth's rate-limit settings.
-- Blocked users get `403` on every API call and are also banned in Supabase Auth; their open jobs and active bids are hidden.
+- Blocked users get `403` with code `user_blocked` on every API call and are also banned in Supabase Auth; their open jobs and active bids are hidden.
 - The app never touches business tables through Supabase directly. It uses Supabase only for sign-in (and, from slice 12, for receiving Realtime messages).
 
 ---
@@ -140,7 +140,7 @@ All endpoints except `/r/{code}` and `/health` are served under `/api` (map them
 
 Sign-in, SMS codes and token refresh are handled by Supabase Auth, so the API has no auth endpoints.
 
-Errors use RFC 7807 problem details with a stable `code` field (`profile_missing`, `rating_pending`, `job_not_open`, `already_bid`, `not_allowed`).
+Errors use RFC 7807 problem details with a stable `code` field (`profile_missing`, `rating_pending`, `job_not_open`, `already_bid`, `not_allowed`, `user_blocked`). A missing or invalid token, or one with no valid `sub`, returns `401`; a blocked user returns `403` with code `user_blocked`.
 
 ---
 

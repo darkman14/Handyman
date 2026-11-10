@@ -1,0 +1,1 @@
+- [Backlog naming and decisions](project_backlog_naming.md) — E02 ids/folder, proposed error codes, UI copy, seeded-data test mapping
