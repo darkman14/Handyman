@@ -3,7 +3,7 @@ id: US-0011
 title: Business tables exist in a locked-down app schema
 epic: E01
 feature: F01.1
-status: ready
+status: done
 ---
 
 ## Story
@@ -62,10 +62,12 @@ As a client or worker, I want my phone number, address and job history stored on
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass: `Schema_app_has_exactly_the_13_tables_plus_migrations_history`, `Tables_have_the_key_fields`, `Times_are_utc_timestamps_and_money_is_integer`, `Users_hold_one_role_in_a_single_column`, `Bid_arrival_window_end_must_be_after_start`; also confirmed on the local Supabase DB (`Local_supabase_has_the_13_tables_with_rls_and_no_policies_or_api_role_grants`) | n/a |
+| AC2 | pass: `Every_table_in_schema_app_has_rls_enabled_and_no_policies` (plain Postgres); same result on the local Supabase DB | n/a |
+| AC3 | pass with a gap: anon key only (no seeded user yet, so a signed-in token was not exercised). `Data_api_returns_and_writes_nothing_for_any_app_table_with_the_anon_key` and `Api_roles_have_no_usage_on_schema_app` (opt-in, need `QA_SUPABASE_*` env vars). Manual: GET and POST on all 13 tables plus the history table with `Accept-Profile`/`Content-Profile: app` return 406 PGRST106 "Invalid schema: app"; `supabase/config.toml` has `[api] schemas = ["public", "graphql_public"]`; anon and authenticated have no USAGE on `app`. Repeat with a signed-in token once E02 seeds users | n/a |
+| AC4 | pass: `No_foreign_key_leaves_schema_app` (plain Postgres without auth/storage); 0 foreign keys leave `app` on the local DB | n/a |
+| AC5 | pass: `One_first_migration_creates_everything_and_reapplying_changes_nothing`. Manual: API in Development starts and logs "No migrations were applied. The database is already up to date." on two consecutive starts. Note: this local DB still holds the old `20261018122207_Initial` row in its history next to the new one (created before the in-place replacement); harmless, `supabase db reset` clears it | n/a |
 
 ## Dev notes
+
+- QA note (2026-11-10): AC3 was verified with the anon key only; repeat with a signed-in user token once US-0003 seeds users. Local databases created before this story keep a stale empty `Initial` row in the migrations history until `supabase db reset`; harmless.
