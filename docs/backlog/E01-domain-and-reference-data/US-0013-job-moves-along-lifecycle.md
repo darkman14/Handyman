@@ -3,7 +3,7 @@ id: US-0013
 title: A job moves only along the allowed lifecycle
 epic: E01
 feature: F01.2
-status: ready
+status: in-progress
 ---
 
 ## Story
