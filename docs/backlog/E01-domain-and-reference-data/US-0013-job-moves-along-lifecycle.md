@@ -3,7 +3,7 @@ id: US-0013
 title: A job moves only along the allowed lifecycle
 epic: E01
 feature: F01.2
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -56,10 +56,10 @@ As a client, I want a job to follow one clear path from posted to hired to finis
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass (domain): JobTests.New_job_is_open_...; US_0013 Persisted_new_job_reloads_open_with_utc_creation_time_and_no_accepted_bid_finish_or_close (Postgres) | n/a |
+| AC2 | pass (domain): Hiring_a_bid_assigns_...; US_0013 Hire_then_finish_survive_save_and_reload_on_postgres, Hire_tolerates_duplicate_entries_in_the_bid_list, Hire_leaves_already_rejected_and_withdrawn_bids_as_they_were | n/a |
+| AC3 | pass (domain): US_0013 Hire_is_refused_unchanged_for_every_non_open_status, Hire_is_refused_for_a_bid_that_is_not_active_..., Hire_is_refused_for_a_bid_of_another_job, Hire_with_a_foreign_bid_in_the_list_changes_nothing_..., Refused_hire_followed_by_save_changes_writes_nothing | n/a |
+| AC4 | pass (domain): US_0013 Finish_is_refused_in_every_status_but_assigned_..., Finish_stores_utc_for_non_utc_input_at_the_same_instant, Hire_then_finish_survive_save_and_reload_on_postgres | n/a |
+| AC5 | pass (domain): US_0013 Cancel_is_refused_for_done_closed_and_cancelled_..., Cancelled_assigned_job_keeps_bid_statuses_..., Cancelled_open_job_leaves_active_bids_active, Cancel_after_hire_persists_cancelled_and_leaves_bid_rows_unchanged | n/a |
 
 ## Dev notes
