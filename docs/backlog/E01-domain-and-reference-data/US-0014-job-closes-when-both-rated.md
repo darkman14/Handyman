@@ -3,7 +3,7 @@ id: US-0014
 title: A job closes only when both sides have rated
 epic: E01
 feature: F01.2
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -52,10 +52,13 @@ As a client or worker, I want my rating to count only once and the job to close 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass (domain): US_0014_JobClosesWhenBothRatedTests.Both_orders_close_the_job_with_correct_ratees_and_utc_close_time; JobRatingTests.Client_rating_a_done_job_records_it_for_the_worker_and_keeps_the_job_done | n/a |
+| AC2 | pass (domain, Postgres): US_0014_JobClosesWhenBothRatedTests.Both_orders_close_the_job_with_correct_ratees_and_utc_close_time (non-UTC input); JobRatingTests.Ratings_and_the_closed_job_survive_save_and_reload_on_postgres | n/a |
+| AC3 | pass (domain): US_0014_JobClosesWhenBothRatedTests.Strangers_other_bidders_and_empty_guid_are_refused_and_the_callers_list_is_untouched; US_0014_JobClosesWhenBothRatedTests.A_refused_rating_stores_nothing_and_does_not_touch_the_job_row | n/a |
+| AC4 | pass (domain, Postgres): US_0014_JobClosesWhenBothRatedTests.Same_rater_twice_is_refused_in_both_directions_and_first_rating_is_unchanged; US_0014_JobClosesWhenBothRatedTests.Concurrent_double_submit_by_the_same_rater_leaves_exactly_one_row | n/a |
+| AC5 | pass (domain): US_0014_JobClosesWhenBothRatedTests.Invalid_stars_are_refused_for_both_parties; JobRatingTests.Rating_a_job_that_is_not_done_is_refused_and_changes_nothing | n/a |
 
 ## Dev notes
+- QA (2026-11-19), no migration or model change in this branch. Known risk for E07 (not a blocker here, no bug filed): `AddRating` trusts the `jobRatings` list the handler passes. Two concurrent FIRST ratings by the client and the worker both read an empty list, both insert (different `(job_id, rater_id)`, so the unique index does not stop them), and the job stays Done with two ratings forever. Reproduced on Postgres: `Concurrent_first_ratings_by_both_sides_can_leave_the_job_stuck_in_done_RISK_for_E07`. Severity for E07: high if unmitigated (job never closes, rating gate blocks both users on new jobs/bids), probability low but real.
+- Mitigation E07 must implement: in the rate handler, one transaction that first locks the job row (`SELECT ... FOR UPDATE` on app.jobs) before reading the ratings, so submits for one job serialize. Verified by `Locking_the_job_row_in_a_transaction_closes_the_job_even_with_simultaneous_submits`. Also catch `DbUpdateException` on the unique index (same rater double submit) and map it to 409 like a DomainException. Optional safety net: an E07 job that reconciles Done jobs having two ratings.
+- Notes for E07: a comment longer than 1000 characters passes the domain (out of scope) but the column is varchar(1000), so the handler must validate the length or the save fails with a 500. `AddRating` with a null accepted bid throws NullReferenceException, not DomainException (handler must load the bid and 404/409 before calling).
