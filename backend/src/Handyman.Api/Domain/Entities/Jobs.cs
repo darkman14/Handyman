@@ -1,5 +1,7 @@
 namespace Handyman.Api.Domain.Entities;
 
+// DomainException lives in Handyman.Api.Domain (parent namespace, resolved automatically).
+
 public enum JobStatus { Open, Assigned, Done, Closed, Cancelled }
 
 public enum BidStatus { Active, Accepted, Rejected, Withdrawn }
@@ -21,12 +23,53 @@ public class Job
     public string? Apartment { get; set; }
     public string? AddressNote { get; set; }
     public int? StoreId { get; set; }
-    public JobStatus Status { get; set; } = JobStatus.Open;
+    public JobStatus Status { get; private set; } = JobStatus.Open;
     /// <summary>Plain column, no foreign key: jobs and bids point at each other.</summary>
-    public Guid? AcceptedBidId { get; set; }
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset? FinishedAt { get; set; }
-    public DateTimeOffset? ClosedAt { get; set; }
+    public Guid? AcceptedBidId { get; private set; }
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? FinishedAt { get; private set; }
+    public DateTimeOffset? ClosedAt { get; private set; }
+
+    /// <summary>
+    /// Open -> Assigned. <paramref name="jobBids"/> must be all bids of this job, including the hired one.
+    /// The hired bid becomes accepted, active bids become rejected, withdrawn bids stay withdrawn.
+    /// </summary>
+    public void Hire(Bid bid, IEnumerable<Bid> jobBids)
+    {
+        if (Status != JobStatus.Open)
+            throw new DomainException($"Job is {Status}; only an Open job can be hired.");
+        if (bid.JobId != Id)
+            throw new DomainException("The bid belongs to another job.");
+        if (bid.Status != BidStatus.Active)
+            throw new DomainException($"Bid is {bid.Status}; only an active bid can be hired.");
+
+        var others = jobBids.Where(b => b.Id != bid.Id).ToList();
+        if (others.Any(b => b.JobId != Id))
+            throw new DomainException("A bid in the list belongs to another job.");
+
+        bid.Status = BidStatus.Accepted;
+        foreach (var other in others.Where(b => b.Status == BidStatus.Active))
+            other.Status = BidStatus.Rejected;
+        AcceptedBidId = bid.Id;
+        Status = JobStatus.Assigned;
+    }
+
+    /// <summary>Assigned -> Done.</summary>
+    public void Finish(DateTimeOffset now)
+    {
+        if (Status != JobStatus.Assigned)
+            throw new DomainException($"Job is {Status}; only an Assigned job can be finished.");
+        Status = JobStatus.Done;
+        FinishedAt = now.ToUniversalTime();
+    }
+
+    /// <summary>Open or Assigned -> Cancelled. Bids keep their status.</summary>
+    public void Cancel()
+    {
+        if (Status is not (JobStatus.Open or JobStatus.Assigned))
+            throw new DomainException($"Job is {Status}; only an Open or Assigned job can be cancelled.");
+        Status = JobStatus.Cancelled;
+    }
 }
 
 public class JobPhoto
@@ -48,7 +91,7 @@ public class Bid
     /// <summary>Whole RSD.</summary>
     public int HourlyRate { get; set; }
     public string? Note { get; set; }
-    public BidStatus Status { get; set; } = BidStatus.Active;
+    public BidStatus Status { get; internal set; } = BidStatus.Active;
     public DateTimeOffset CreatedAt { get; set; }
 }
 
