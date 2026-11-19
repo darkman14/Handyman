@@ -3,7 +3,7 @@ id: US-0014
 title: A job closes only when both sides have rated
 epic: E01
 feature: F01.2
-status: ready
+status: in-progress
 ---
 
 ## Story
