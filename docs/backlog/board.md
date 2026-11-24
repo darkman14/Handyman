@@ -15,7 +15,7 @@
 | US-0011 | Business tables exist in a locked-down app schema | E01 | done |
 | US-0012 | The database refuses duplicates that break core rules | E01 | done |
 | US-0013 | A job moves only along the allowed lifecycle | E01 | done |
-| US-0014 | A job closes only when both sides have rated | E01 | ready |
+| US-0014 | A job closes only when both sides have rated | E01 | done |
 | US-0015 | Commands save all or nothing and push only after saving | E01 | ready |
 | US-0016 | Every use case has one handler and reads never write | E01 | ready |
 | US-0017 | Failures come back as problem details without internals | E01 | ready |

@@ -63,6 +63,56 @@ public class Job
         FinishedAt = now.ToUniversalTime();
     }
 
+    /// <summary>
+    /// Records a rating on a Done job and returns it; the caller adds it to the context.
+    /// The job does not know the hired worker, so the handler must load and pass:
+    /// <paramref name="acceptedBid"/> (the bid with Id == AcceptedBidId; its WorkerId is the hired worker) and
+    /// <paramref name="jobRatings"/> (all ratings already stored for this job).
+    /// Only the client or the hired worker may rate, once each; the ratee is the other party.
+    /// When both ratings exist the job becomes Closed with ClosedAt in UTC. On any refusal nothing changes.
+    /// </summary>
+    public Rating AddRating(Guid raterId, int stars, string? comment, DateTimeOffset now,
+        Bid acceptedBid, IEnumerable<Rating> jobRatings)
+    {
+        if (Status != JobStatus.Done)
+            throw new DomainException($"Job is {Status}; only a Done job can be rated.");
+        if (acceptedBid.JobId != Id || acceptedBid.Id != AcceptedBidId)
+            throw new DomainException("The bid is not the accepted bid of this job.");
+
+        var workerId = acceptedBid.WorkerId;
+        Guid rateeId;
+        if (raterId == ClientId) rateeId = workerId;
+        else if (raterId == workerId) rateeId = ClientId;
+        else throw new DomainException("Only the job's client or its hired worker can rate it.");
+
+        if (stars is < 1 or > 5)
+            throw new DomainException("Stars must be between 1 and 5.");
+
+        var ratings = jobRatings.ToList();
+        if (ratings.Any(r => r.JobId != Id))
+            throw new DomainException("A rating in the list belongs to another job.");
+        if (ratings.Any(r => r.RaterId == raterId))
+            throw new DomainException("This user has already rated the job.");
+
+        var rating = new Rating
+        {
+            Id = Guid.NewGuid(),
+            JobId = Id,
+            RaterId = raterId,
+            RateeId = rateeId,
+            Stars = stars,
+            Comment = comment,
+            CreatedAt = now.ToUniversalTime(),
+        };
+
+        if (ratings.Any(r => r.RaterId == rateeId))
+        {
+            Status = JobStatus.Closed;
+            ClosedAt = now.ToUniversalTime();
+        }
+        return rating;
+    }
+
     /// <summary>Open or Assigned -> Cancelled. Bids keep their status.</summary>
     public void Cancel()
     {
