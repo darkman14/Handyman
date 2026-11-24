@@ -8,13 +8,17 @@ public static class CqrsRegistration
 {
     /// <summary>Registers every command/query handler in the assembly, wrapped in its decorators:
     /// commands logging -> transaction -> handler, queries logging -> handler.</summary>
-    public static IServiceCollection AddCqrs(this IServiceCollection services, Assembly assembly)
+    public static IServiceCollection AddCqrs(this IServiceCollection services, Assembly assembly) =>
+        services.AddCqrs(assembly.GetTypes());
+
+    /// <summary>Same as the assembly overload, for an explicit set of candidate types (used by tests).</summary>
+    public static IServiceCollection AddCqrs(this IServiceCollection services, IEnumerable<Type> candidates)
     {
         services.TryAddScoped<PendingPushes>();
         services.TryAddSingleton<IPushQueue, PushQueue>();
 
         // skip open generics, otherwise the decorators would register themselves as handlers
-        var types = assembly.GetTypes()
+        var types = candidates
             .Where(t => t is { IsAbstract: false, IsInterface: false, IsGenericTypeDefinition: false });
 
         foreach (var impl in types)

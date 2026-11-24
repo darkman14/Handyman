@@ -3,7 +3,7 @@ id: US-0016
 title: Every use case has one handler and reads never write
 epic: E01
 feature: F01.3
-status: ready
+status: in-progress
 ---
 
 ## Story
