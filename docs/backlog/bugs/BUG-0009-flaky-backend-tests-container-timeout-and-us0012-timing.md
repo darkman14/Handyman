@@ -3,7 +3,7 @@ id: BUG-0009
 title: Backend test suite occasionally fails once on a Testcontainers start timeout or a timing-sensitive US_0012 test
 story: US-0017
 criterion: none (test reliability)
-severity: low
+severity: medium
 status: open
 found-by: coordinator
 ---
@@ -32,3 +32,6 @@ Possible root cause found by backend-dev: before US-0018 every ApiFactory-based 
 
 ## Occurrence 2026-11-24 (US-0018, coordinator)
 In a full `dotnet test backend --no-build` run (second of two back-to-back runs, 323 tests) the three `HealthAndAuthTests` failed at about 1:27 into the run; the first run passed (323 of 323) and the same three tests passed when rerun alone (3 of 3). The failure message was not captured (output was cut). Pattern so far: one-off failures in tests that start a Testcontainers Postgres or use ApiFactory, only in full parallel runs. Next time capture the full failure text with `--logger "console;verbosity=normal"` or a trx logger.
+
+## Severity raised to medium 2026-11-24
+Four full-suite runs in one day had failures (once 10 tests, once 3, once 2): about one in three full runs. It makes CI unreliable. Fix as its own `fix/*` branch (cap test parallelism for container tests or share one container per collection), not inside a feature story.

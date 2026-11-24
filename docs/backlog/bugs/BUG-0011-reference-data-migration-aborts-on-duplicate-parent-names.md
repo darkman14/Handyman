@@ -4,7 +4,7 @@ title: ReferenceData migration aborts (and blocks API startup) when areas alread
 story: US-0018
 criterion: AC5
 severity: medium
-status: open
+status: verified
 found-by: qa-api
 ---
 
@@ -25,3 +25,6 @@ Postgres error 21000 "more than one row returned by a subquery used as an expres
 
 ## Suggested fix (optional)
 Resolve the parent as the row in the tree being built (city: `kind='City' AND name='Beograd' ORDER BY id LIMIT 1`; municipality: join on that city id; neighborhood: join on the municipality id), i.e. add `ORDER BY id LIMIT 1` and constrain the municipality lookup by `parent_id = city_id`; same for the store's area lookup.
+
+## Verification (qa-api, 2026-11-24, after backend-dev fix with ref_ids)
+Verified on throwaway Postgres 17 containers: two Beograd cities (lowest id adopted), foreign Vračar under another city, two Vračar under the same Beograd (lowest adopted, other untouched), Čubura under two other municipalities, partial Beograd tree, Beograd with wrong kind, NULL-parent areas, 150 junk areas on ids 1-150, rows referenced by users/worker_areas/jobs, store code in another spelling, raw re-run of the migration SQL three times (no change), Down then Up three times (valid tree each time), fresh DB unchanged (ids 1-20, 1-6, store 1, Čubura 6). In every case the store points to Čubura > Vračar > Beograd (City, no parent), all 20 reference rows are reachable under that Beograd, sequences are above max(id). The two former KNOWN_GAP_BUG_0011 tests are now normal passing tests. Full suite 323 passed.
