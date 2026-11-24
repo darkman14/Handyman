@@ -3,7 +3,7 @@ id: US-0019
 title: Anyone can list the trades
 epic: E01
 feature: F01.4
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -49,7 +49,17 @@ As a client who just scanned a store flyer, I want to see which kinds of repair 
 - Depends on US-0018 (the six trades) and US-0016 (first real query handler is covered by the architecture tests).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+`GET /api/trades` (operationId `ListTrades`), feature `Features/Trades/ListTrades.cs`.
+
+- **Auth:** anonymous (`AllowAnonymous`). No token, an expired, malformed or badly signed token, or an `Authorization` header without `Bearer` is treated as anonymous (AC5). A valid token of a blocked user gets `403 user_blocked` once US-0002 is built.
+- **Request:** no parameters, no body.
+- **Response `200`:** JSON array, always the six trades in this fixed order: Appliance repair, Electrical, Plumbing, Heating & AC, Painting, Carpentry.
+  ```json
+  [ { "id": 1, "name": "Appliance repair" }, ... ]
+  ```
+  `id`: integer (the stored trade id, stable across calls); `name`: string, English, `&` kept as is.
+- **Status codes:** `200` (all cases above), `403 user_blocked` (blocked user's valid token, from US-0002). No `401`, no `400`, no `404`; the list is never empty.
+- **Error body:** the standard problem-details shape with a machine `code` (only `user_blocked` applies).
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -61,3 +71,5 @@ As a client who just scanned a store flyer, I want to see which kinds of repair 
 | AC5 | | n/a |
 
 ## Dev notes
+- Contract mode: handler is a stub that throws `NotImplementedException`; the real `ReadDbContext` query (ordered, `Select` into `TradeResponse`) comes in build mode. Order must be explicit (the table has no order column; decide in build: order by id if seeded in that order, else add a sort column).
+- Build mode must verify AC5: the JWT handler must not challenge on an invalid token for an `AllowAnonymous` endpoint (the `/api` group requires authorization by default).
