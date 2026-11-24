@@ -16,7 +16,7 @@ public class US_0012_QaExploratoryTests : IAsyncLifetime
 {
     private const string InitialId = "20261110150844_Initial";
     private const string UniqueId = "20261110162714_UniqueConstraints";
-    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _pg = new();
 
     public Task InitializeAsync() => _pg.StartAsync();
     public Task DisposeAsync() => _pg.DisposeAsync().AsTask();

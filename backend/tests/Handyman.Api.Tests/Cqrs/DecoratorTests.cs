@@ -97,7 +97,7 @@ public sealed class FakePushQueue(Func<int> committedRows) : IPushQueue
 
 public class DecoratorFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _postgres = new();
 
     public string ConnectionString => _postgres.GetConnectionString();
 

@@ -94,7 +94,7 @@ public sealed class QaHandler(AppDbContext db, IServiceProvider sp, DbContextOpt
 
 public sealed class QaFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _pg = new();
     public string ConnectionString => _pg.GetConnectionString();
 
     public async Task InitializeAsync()

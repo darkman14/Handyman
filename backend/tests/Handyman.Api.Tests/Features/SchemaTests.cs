@@ -9,7 +9,7 @@ namespace Handyman.Api.Tests.Features;
 /// <summary>US-0011: the migrations create the 13 business tables on a plain Postgres, locked down by RLS.</summary>
 public class SchemaFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _postgres = new();
 
     public string ConnectionString => _postgres.GetConnectionString();
 
