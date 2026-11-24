@@ -3,7 +3,7 @@ id: US-0015
 title: Commands save all or nothing and push only after saving
 epic: E01
 feature: F01.3
-status: ready
+status: in-progress
 ---
 
 ## Story

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Handyman.Api.Auth;
+using Handyman.Api.Cqrs;
 using Handyman.Api.Data;
 using Handyman.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection(Sup
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"),
         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", AppDbContext.Schema)));
+builder.Services.AddCqrs(typeof(Program).Assembly);
 builder.Services.AddHttpClient<IBlobStorage, SupabaseStorage>();
 builder.Services.AddSupabaseJwt();
 builder.Services.AddOpenApi();
