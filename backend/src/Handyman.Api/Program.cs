@@ -74,6 +74,7 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 
 var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<ValidationFilter>();
 api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new { id = user.Id() })).WithName("GetMe");
+Handyman.Api.Features.Trades.ListTrades.Map(api);
 
 app.Run();
 
