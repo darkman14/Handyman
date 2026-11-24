@@ -3,7 +3,7 @@ id: US-0019
 title: Anyone can list the trades
 epic: E01
 feature: F01.4
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -64,12 +64,22 @@ As a client who just scanned a store flyer, I want to see which kinds of repair 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass (Anonymous_gets_the_six_trades_in_the_fixed_order; live curl) | n/a |
+| AC2 | pass (Anonymous_gets_the_six_trades_in_the_fixed_order; Names_keep_the_ampersand_in_the_raw_json; live curl) | n/a |
+| AC3 | pass (A_signed_in_user_gets_the_same_list) | n/a |
+| AC4 | pass (Ids_match_the_stored_ids_and_are_stable_across_calls; live curl ids 1045-1050) | n/a |
+| AC5 | pass (expired, garbage, bad signature, no Bearer, unreachable JWKS tests; live curl) | n/a |
 
 ## Dev notes
 - Contract mode: handler is a stub that throws `NotImplementedException`; the real `ReadDbContext` query (ordered, `Select` into `TradeResponse`) comes in build mode. Order must be explicit (the table has no order column; decide in build: order by id if seeded in that order, else add a sort column).
 - Build mode must verify AC5: the JWT handler must not challenge on an invalid token for an `AllowAnonymous` endpoint (the `/api` group requires authorization by default).
+
+QA notes (qa-api):
+- Live HTTP against the API in Development with local Supabase (JWKS): no token, expired, bad signature, garbage, no Bearer, empty Bearer, 8 KB token, duplicate Authorization headers, trailing slash, query noise, any Accept: all `200`, body identical (196 bytes, `Heating & AC` raw, only `id` and `name`, ids 1045-1050 on the polluted local DB, fixed order), `application/json; charset=utf-8`. Header of 40 KB or more: Kestrel `431` before the app (platform limit). POST/PUT/DELETE/PATCH/HEAD: `405` with `Allow: GET` (HEAD not allowed; harmless). CORS preflight `204`. About 215 ms on localhost, no gzip (196-byte body).
+- No `Cache-Control`/`ETag`. Recommended (optional, not in the story, no bug): `Cache-Control: public, max-age=300`, since reference data changes only by migration.
+- AC3 with a real Supabase token was not possible: local Supabase answers `phone_provider_disabled` on the OTP call, so `dev-token.sh` fails. AC3 verified with `TestAuth.TokenFor`.
+- A blocked user's valid token returns `200` today; `403 user_blocked` is US-0002 (not built), not a bug. Test `A_blocked_users_valid_token_gets_200_today_because_US_0002_is_not_built` must flip when US-0002 lands.
+- Unreachable JWKS (dead port): `GET /api/trades` `200`, `/api/me` `401`, no `500`. A hanging JWKS host is a code-reading risk: BUG-0013 (low).
+- A seventh custom trade is not listed (`A_seventh_custom_trade_is_not_listed`); matches the contract ("always the six"). Later stories cannot offer a custom trade in the picker; fine while adding trades is out of scope.
+- Architecture tests (US-0016) pass with the real handler; full suite 342 passed. OpenAPI regenerates unchanged; `frontend/src/api/schema.d.ts` contains `/api/trades`.
+- Tests: `Acceptance/US_0019_ListTradesTests.cs` (dev), `Acceptance/US_0019_QaExploratoryTests.cs` (QA).

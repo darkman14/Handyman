@@ -20,7 +20,7 @@
 | US-0016 | Every use case has one handler and reads never write | E01 | done |
 | US-0017 | Failures come back as problem details without internals | E01 | done |
 | US-0018 | Reference data is in place in every environment | E01 | done |
-| US-0019 | Anyone can list the trades | E01 | in-progress |
+| US-0019 | Anyone can list the trades | E01 | done |
 | US-0020 | Anyone can browse areas level by level | E01 | ready |
 | BUG-0001 | Referral code uniqueness bypassed by tab/nbsp/newline padding (US-0012 AC4) | E01 | fixed |
 | BUG-0002 | ReadDbContext writes via ExecuteUpdate/ExecuteDelete/ExecuteSql (US-0016 AC4, medium) | E01 | fixed |
@@ -34,3 +34,4 @@
 | BUG-0009 | Flaky backend tests: container start timeout and a timing-sensitive US_0012 test (test reliability, medium) | E01 | open |
 | BUG-0011 | ReferenceData migration aborts when areas has duplicate parent names (US-0018 AC5, medium) | E01 | verified |
 | BUG-0012 | ReferenceData Down deletes a foreign neighborhood on a reference id and fails on child areas (US-0018 AC4, low) | E01 | open |
+| BUG-0013 | JWKS download has no short timeout and runs under a lock; a hanging Supabase stalls bearer-token requests incl. public ones (US-0019 AC5, low) | E01 | open |
