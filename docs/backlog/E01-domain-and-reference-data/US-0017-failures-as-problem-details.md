@@ -3,7 +3,7 @@ id: US-0017
 title: Failures come back as problem details without internals
 epic: E01
 feature: F01.3
-status: in-qa
+status: done
 ---
 
 ## Story
@@ -51,7 +51,7 @@ As a client or worker, I want the app to tell me clearly why something didn't wo
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
 | AC1 | pass (`Domain_error_returns_409_with_its_stable_code`, `Failure_inside_a_command_rolls_back_sends_no_push_and_maps_correctly` domain) | n/a |
-| AC2 | pass for the mapping, caveat BUG-0008 medium (`Concurrency_conflict_returns_409_job_not_open_without_internals`, `Failure_inside_a_command_...` concurrency, `KNOWN_GAP_BUG_0008_job_has_no_concurrency_token`) | n/a |
+| AC2 | pass; BUG-0008 verified fixed (xmin token). Gap BUG-0010 medium: parallel ratings do not write the job row, so no conflict (`Concurrency_conflict_returns_409_job_not_open_without_internals`, `Loser_of_a_real_race_gets_409_job_not_open_over_http` hire/finish/cancel, `Second_save_of_*_throws_DbUpdateConcurrencyException`, `Hire_loses_against_a_concurrent_bid_withdrawal_...`, `Saving_unchanged_entities_...never_conflicts`, `Save_after_reload_and_two_different_jobs_...`, `KNOWN_GAP_BUG_0010_...`) | n/a |
 | AC3 | pass (`Not_found_returns_404_with_thing_not_found_code`, `Failure_inside_a_command_...` notfound) | n/a |
 | AC4 | pass; gaps BUG-0005, BUG-0006, BUG-0007, all low (`Missing_and_invalid_fields_return_400_...`, `Body_variants_give_the_expected_status_and_never_500`, `Validation_errors_are_camel_cased_...`, `Bad_route_and_query_values_are_400_validation_failed`) | n/a |
 | AC5 | pass (`Unexpected_failure_returns_500_without_internals_in_any_environment`, `Server_error_leaks_nothing_in_development_and_production_like_environments`, `Unexpected_failure_is_logged_at_error_level_by_the_handler`) | n/a |
@@ -72,3 +72,8 @@ As a client or worker, I want the app to tell me clearly why something didn't wo
 - Double logging: not measured at runtime. By design the framework's ExceptionHandlerMiddleware logs the exception and ApiExceptionHandler logs it again, so two Error entries per 500; acceptable. The handler's own entry is exactly one, and a client abort produces no Error entry from it.
 - A DomainException wrapped inside another exception type is a 500 by design (exact type mapping): handlers must not wrap it.
 - OpenAPI file content unchanged by the build (only line endings).
+
+- QA re-verification of BUG-0008 (qa-api, 2026-11-24, commit 7d6957a): confirmed. Real two-context races on Postgres give `DbUpdateConcurrencyException` for Hire, Finish, Cancel, a bid change racing a hire (job row untouched, bid xmin catches it), and HTTP 409 `job_not_open` problem+json without xmin/SQL; the winner's state is stored. No false conflicts: unchanged save, repeated saves in one context (token refreshed), hire with job + several bids in one SaveChanges, reload then save, two different jobs in parallel. New file `Acceptance/US_0017_QaConcurrencyTokenTests.cs`.
+- Migration: `dotnet ef migrations script` for the new migration is only the history insert. A throwaway Postgres 17 taken to `UniqueConstraints`, then to latest: columns, constraints, indexes, RLS flags and policies of the whole `app` schema are byte-identical before and after; no `xmin`/`version` user column on `jobs`/`bids`; `has-pending-model-changes` is clean (Npgsql does not try to add the system column). The local Supabase DB already had the migration; the API in Development starts, reports "No migrations were applied", `/health` 200.
+- Gotcha for future handlers: `FromSql("select * from app.jobs ...")` on `Jobs`/`Bids` throws because `xmin` is not part of `*`; write `select *, xmin from ...` (test `Raw_sql_select_star_on_jobs_works_only_when_xmin_is_selected_too`). Likelihood is low: the rules already say queries use `Select` projections and commands load entities with LINQ; no `FromSql` exists in the code today. A note here is enough; an architecture test is not warranted.
+- Rule for command handlers: the xmin token only protects rows that are UPDATED. A command that only inserts child rows (ratings, bids) and decides from the job's state does not conflict with a parallel one. See BUG-0010 (both parties rating at once leave the job Done). ReadDbContext reads of jobs/bids (entities, projections, joins) work.

@@ -4,7 +4,7 @@ title: Job has no concurrency token, so two real saves never collide and AC2 can
 story: US-0017
 criterion: AC2
 severity: medium
-status: fixed
+status: verified
 found-by: qa-api
 ---
 
