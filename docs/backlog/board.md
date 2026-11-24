@@ -18,7 +18,7 @@
 | US-0014 | A job closes only when both sides have rated | E01 | done |
 | US-0015 | Commands save all or nothing and push only after saving | E01 | done |
 | US-0016 | Every use case has one handler and reads never write | E01 | done |
-| US-0017 | Failures come back as problem details without internals | E01 | ready |
+| US-0017 | Failures come back as problem details without internals | E01 | done |
 | US-0018 | Reference data is in place in every environment | E01 | ready |
 | US-0019 | Anyone can list the trades | E01 | ready |
 | US-0020 | Anyone can browse areas level by level | E01 | ready |
@@ -26,3 +26,9 @@
 | BUG-0002 | ReadDbContext writes via ExecuteUpdate/ExecuteDelete/ExecuteSql (US-0016 AC4, medium) | E01 | fixed |
 | BUG-0003 | AC2 rule misses IServiceProvider / plain DbContext in handlers (US-0016 AC2, low) | E01 | open |
 | BUG-0004 | ReadDbContext can write after SELECT set_config(read_only off) on an open connection (US-0016 AC4, low) | E01 | open |
+| BUG-0005 | 415, unknown route and 405 come back with an empty body, no problem+json code (US-0017 AC4, low) | E01 | open |
+| BUG-0006 | [RegularExpression] validation message echoes the regex pattern (US-0017 AC4, low) | E01 | open |
+| BUG-0007 | Nested request objects are not validated (US-0017 AC4, low) | E01 | open |
+| BUG-0008 | Job has no concurrency token; real concurrent saves never raise a conflict (US-0017 AC2, medium) | E01 | verified |
+| BUG-0010 | Parallel ratings by both parties leave the job Done, not Closed; xmin cannot detect it (US-0017 AC2, medium) | E01 | open (E07) |
+| BUG-0009 | Flaky backend tests: container start timeout and a timing-sensitive US_0012 test (test reliability, low) | E01 | open |

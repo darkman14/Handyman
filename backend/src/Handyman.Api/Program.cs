@@ -36,6 +36,10 @@ builder.Services.AddCqrs(typeof(Program).Assembly);
 builder.Services.AddHttpClient<IBlobStorage, SupabaseStorage>();
 builder.Services.AddSupabaseJwt();
 builder.Services.AddOpenApi();
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
+// Unreadable bodies/parameters must throw (in every environment) so the exception handler answers 400 validation_failed.
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o => o.ThrowOnBadRequest = true);
 
 var corsOrigins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? [];
 builder.Services.AddCors(cors => cors.AddDefaultPolicy(policy =>
@@ -54,6 +58,7 @@ if (!isDocGeneration && migrateOnStartup)
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
 
+app.UseExceptionHandler(); // first, so it catches everything below; 401/403 are not exceptions and stay as they are
 app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseAuthentication();
@@ -67,7 +72,7 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
     return Results.Ok(new { status = "ok" });
 }).WithName("Health");
 
-var api = app.MapGroup("/api").RequireAuthorization();
+var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<ValidationFilter>();
 api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new { id = user.Id() })).WithName("GetMe");
 
 app.Run();

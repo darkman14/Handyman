@@ -43,6 +43,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
                     NameClaimType = "sub",
                 };
             });
+            services.AddSingleton<TestErrorCalls>();
+            services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, TestErrorEndpointsStartupFilter>();
             services.RemoveAll<IBlobStorage>();
             services.AddSingleton<IBlobStorage>(Blobs);
         });

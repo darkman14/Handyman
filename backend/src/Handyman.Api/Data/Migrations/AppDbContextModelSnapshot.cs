@@ -101,6 +101,12 @@ namespace Handyman.Api.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.Property<Guid>("WorkerId")
                         .HasColumnType("uuid")
                         .HasColumnName("worker_id");
@@ -250,6 +256,12 @@ namespace Handyman.Api.Data.Migrations
                     b.Property<int>("TradeId")
                         .HasColumnType("integer")
                         .HasColumnName("trade_id");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_jobs");
