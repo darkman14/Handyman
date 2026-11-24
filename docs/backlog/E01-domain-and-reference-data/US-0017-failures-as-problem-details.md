@@ -3,7 +3,7 @@ id: US-0017
 title: Failures come back as problem details without internals
 epic: E01
 feature: F01.3
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -57,3 +57,12 @@ As a client or worker, I want the app to tell me clearly why something didn't wo
 | AC5 | | n/a |
 
 ## Dev notes
+
+- Error codes chosen by backend-dev (2026-11-24), also in the header of `Infrastructure/ApiExceptionHandler.cs`:
+  - 409 domain: `job_not_open` (hire on a non-Open job; any concurrency conflict), `bid_job_mismatch`, `bid_not_active`, `job_not_assigned`, `job_not_done`, `bid_not_accepted`, `not_allowed`, `invalid_stars`, `rating_job_mismatch`, `already_rated`, `job_not_cancellable`, and the fallback `business_rule_violated`.
+  - 404: `<thing>_not_found` from `NotFoundException(thing)`.
+  - 400: `validation_failed` with `errors` per field (also malformed JSON).
+  - 500: `server_error`, fixed text "Something went wrong. Try again.", logged on the server.
+  - Other rejected requests (for example 415) keep their status with `request_rejected`.
+- Validation is a reflection-based endpoint filter on the `/api` group (the built-in `AddValidation()` didn't cover test-assembly types and its 400 has no `code`). It does not walk nested objects: keep request records flat.
+- The problem-details `type` is a placeholder (`https://httpstatuses.io/<status>`).

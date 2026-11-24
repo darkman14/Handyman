@@ -18,7 +18,7 @@
 | US-0014 | A job closes only when both sides have rated | E01 | done |
 | US-0015 | Commands save all or nothing and push only after saving | E01 | done |
 | US-0016 | Every use case has one handler and reads never write | E01 | done |
-| US-0017 | Failures come back as problem details without internals | E01 | ready |
+| US-0017 | Failures come back as problem details without internals | E01 | in-progress |
 | US-0018 | Reference data is in place in every environment | E01 | ready |
 | US-0019 | Anyone can list the trades | E01 | ready |
 | US-0020 | Anyone can browse areas level by level | E01 | ready |

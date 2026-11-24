@@ -37,15 +37,15 @@ public class Job
     public void Hire(Bid bid, IEnumerable<Bid> jobBids)
     {
         if (Status != JobStatus.Open)
-            throw new DomainException($"Job is {Status}; only an Open job can be hired.");
+            throw new DomainException("job_not_open", $"Job is {Status}; only an Open job can be hired.");
         if (bid.JobId != Id)
-            throw new DomainException("The bid belongs to another job.");
+            throw new DomainException("bid_job_mismatch", "The bid belongs to another job.");
         if (bid.Status != BidStatus.Active)
-            throw new DomainException($"Bid is {bid.Status}; only an active bid can be hired.");
+            throw new DomainException("bid_not_active", $"Bid is {bid.Status}; only an active bid can be hired.");
 
         var others = jobBids.Where(b => b.Id != bid.Id).ToList();
         if (others.Any(b => b.JobId != Id))
-            throw new DomainException("A bid in the list belongs to another job.");
+            throw new DomainException("bid_job_mismatch", "A bid in the list belongs to another job.");
 
         bid.Status = BidStatus.Accepted;
         foreach (var other in others.Where(b => b.Status == BidStatus.Active))
@@ -58,7 +58,7 @@ public class Job
     public void Finish(DateTimeOffset now)
     {
         if (Status != JobStatus.Assigned)
-            throw new DomainException($"Job is {Status}; only an Assigned job can be finished.");
+            throw new DomainException("job_not_assigned", $"Job is {Status}; only an Assigned job can be finished.");
         Status = JobStatus.Done;
         FinishedAt = now.ToUniversalTime();
     }
@@ -75,24 +75,24 @@ public class Job
         Bid acceptedBid, IEnumerable<Rating> jobRatings)
     {
         if (Status != JobStatus.Done)
-            throw new DomainException($"Job is {Status}; only a Done job can be rated.");
+            throw new DomainException("job_not_done", $"Job is {Status}; only a Done job can be rated.");
         if (acceptedBid.JobId != Id || acceptedBid.Id != AcceptedBidId)
-            throw new DomainException("The bid is not the accepted bid of this job.");
+            throw new DomainException("bid_not_accepted", "The bid is not the accepted bid of this job.");
 
         var workerId = acceptedBid.WorkerId;
         Guid rateeId;
         if (raterId == ClientId) rateeId = workerId;
         else if (raterId == workerId) rateeId = ClientId;
-        else throw new DomainException("Only the job's client or its hired worker can rate it.");
+        else throw new DomainException("not_allowed", "Only the job's client or its hired worker can rate it.");
 
         if (stars is < 1 or > 5)
-            throw new DomainException("Stars must be between 1 and 5.");
+            throw new DomainException("invalid_stars", "Stars must be between 1 and 5.");
 
         var ratings = jobRatings.ToList();
         if (ratings.Any(r => r.JobId != Id))
-            throw new DomainException("A rating in the list belongs to another job.");
+            throw new DomainException("rating_job_mismatch", "A rating in the list belongs to another job.");
         if (ratings.Any(r => r.RaterId == raterId))
-            throw new DomainException("This user has already rated the job.");
+            throw new DomainException("already_rated", "This user has already rated the job.");
 
         var rating = new Rating
         {
@@ -117,7 +117,7 @@ public class Job
     public void Cancel()
     {
         if (Status is not (JobStatus.Open or JobStatus.Assigned))
-            throw new DomainException($"Job is {Status}; only an Open or Assigned job can be cancelled.");
+            throw new DomainException("job_not_cancellable", $"Job is {Status}; only an Open or Assigned job can be cancelled.");
         Status = JobStatus.Cancelled;
     }
 }
