@@ -28,8 +28,9 @@ namespace Handyman.Api.Data.Migrations
 DO $ref$
 DECLARE
   r record;
-  city_id int;
   parent int;
+  existing_id int;
+  ref_ids int[] := ARRAY[]::int[];
 BEGIN
   FOR r IN SELECT * FROM (VALUES
       (1, 'Appliance repair'), (2, 'Electrical'), (3, 'Plumbing'),
@@ -42,37 +43,43 @@ BEGIN
     END IF;
   END LOOP;
 
+  -- Areas: parents are resolved through the ids already settled in this loop (ref_ids), never by name alone,
+  -- so duplicate names elsewhere in app.areas cannot make a lookup return more than one row. A row that exists
+  -- already under the resolved parent is adopted (lowest id wins when there are several).
   FOR r IN SELECT * FROM (VALUES
       (1,  'Beograd',         'City',         NULL),
-      (2,  'Vračar',          'Municipality', 'Beograd'),
-      (3,  'Novi Beograd',    'Municipality', 'Beograd'),
-      (4,  'Zvezdara',        'Municipality', 'Beograd'),
-      (5,  'Crveni krst',     'Neighborhood', 'Vračar'),
-      (6,  'Čubura',          'Neighborhood', 'Vračar'),
-      (7,  'Englezovac',      'Neighborhood', 'Vračar'),
-      (8,  'Kalenić',         'Neighborhood', 'Vračar'),
-      (9,  'Krunski venac',   'Neighborhood', 'Vračar'),
-      (10, 'Neimar',          'Neighborhood', 'Vračar'),
-      (11, 'Bežanijska kosa', 'Neighborhood', 'Novi Beograd'),
-      (12, 'Fontana',         'Neighborhood', 'Novi Beograd'),
-      (13, 'Ledine',          'Neighborhood', 'Novi Beograd'),
-      (14, 'Paviljoni',       'Neighborhood', 'Novi Beograd'),
-      (15, 'Tošin bunar',     'Neighborhood', 'Novi Beograd'),
-      (16, 'Cvetkova pijaca', 'Neighborhood', 'Zvezdara'),
-      (17, 'Đeram',           'Neighborhood', 'Zvezdara'),
-      (18, 'Konjarnik',       'Neighborhood', 'Zvezdara'),
-      (19, 'Mali Mokri Lug',  'Neighborhood', 'Zvezdara'),
-      (20, 'Mirijevo',        'Neighborhood', 'Zvezdara')) AS v(id, name, kind, parent_name) ORDER BY v.id LOOP
-    parent := CASE r.kind
-      WHEN 'Municipality' THEN (SELECT id FROM app.areas WHERE kind = 'City' AND name = r.parent_name)
-      WHEN 'Neighborhood' THEN (SELECT id FROM app.areas WHERE kind = 'Municipality' AND name = r.parent_name)
-    END;
-    IF NOT EXISTS (SELECT 1 FROM app.areas WHERE kind = r.kind AND name = r.name AND parent_id IS NOT DISTINCT FROM parent) THEN
+      (2,  'Vračar',          'Municipality', 1),
+      (3,  'Novi Beograd',    'Municipality', 1),
+      (4,  'Zvezdara',        'Municipality', 1),
+      (5,  'Crveni krst',     'Neighborhood', 2),
+      (6,  'Čubura',          'Neighborhood', 2),
+      (7,  'Englezovac',      'Neighborhood', 2),
+      (8,  'Kalenić',         'Neighborhood', 2),
+      (9,  'Krunski venac',   'Neighborhood', 2),
+      (10, 'Neimar',          'Neighborhood', 2),
+      (11, 'Bežanijska kosa', 'Neighborhood', 3),
+      (12, 'Fontana',         'Neighborhood', 3),
+      (13, 'Ledine',          'Neighborhood', 3),
+      (14, 'Paviljoni',       'Neighborhood', 3),
+      (15, 'Tošin bunar',     'Neighborhood', 3),
+      (16, 'Cvetkova pijaca', 'Neighborhood', 4),
+      (17, 'Đeram',           'Neighborhood', 4),
+      (18, 'Konjarnik',       'Neighborhood', 4),
+      (19, 'Mali Mokri Lug',  'Neighborhood', 4),
+      (20, 'Mirijevo',        'Neighborhood', 4)) AS v(id, name, kind, parent_ref) ORDER BY v.id LOOP
+    parent := ref_ids[r.parent_ref];
+    existing_id := (SELECT a.id FROM app.areas a
+                    WHERE a.kind = r.kind AND a.name = r.name AND a.parent_id IS NOT DISTINCT FROM parent
+                    ORDER BY a.id LIMIT 1);
+    IF existing_id IS NULL THEN
       IF EXISTS (SELECT 1 FROM app.areas WHERE id = r.id) THEN
-        r.id := (SELECT max(id) FROM app.areas) + 1;
+        existing_id := (SELECT max(id) FROM app.areas) + 1;
+      ELSE
+        existing_id := r.id;
       END IF;
-      INSERT INTO app.areas (id, name, kind, parent_id) OVERRIDING SYSTEM VALUE VALUES (r.id, r.name, r.kind, parent);
+      INSERT INTO app.areas (id, name, kind, parent_id) OVERRIDING SYSTEM VALUE VALUES (existing_id, r.name, r.kind, parent);
     END IF;
+    ref_ids[r.id] := existing_id;
   END LOOP;
 
   -- Same expression as ux_stores_referral_code_ci, so an existing code in any spelling is respected.
@@ -81,8 +88,7 @@ BEGIN
     VALUES (
       CASE WHEN EXISTS (SELECT 1 FROM app.stores WHERE id = 1) THEN (SELECT max(id) FROM app.stores) + 1 ELSE 1 END,
       'Home Center Vračar',
-      (SELECT n.id FROM app.areas n JOIN app.areas m ON m.id = n.parent_id AND m.kind = 'Municipality' AND m.name = 'Vračar'
-        WHERE n.kind = 'Neighborhood' AND n.name = 'Čubura'),
+      ref_ids[6],
       'VRACAR01');
   END IF;
 
