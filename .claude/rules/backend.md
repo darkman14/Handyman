@@ -12,5 +12,5 @@ paths:
 - State changes only through `Job` methods; invalid transitions throw `DomainException` (→ 409).
 - Response DTOs are chosen per role. Address fields beyond neighborhood and street go only to the client and the hired worker.
 - Money is `int` RSD, time is `DateTimeOffset` UTC. Tables live in schema `app`.
-- New migration: `dotnet ef migrations add <Name> --project backend/src/Handyman.Api`. Migrations enable RLS on every new table.
+- New migration: `dotnet ef migrations add <Name> --project backend/src/Handyman.Api --context AppDbContext` (`ReadDbContext` has no migrations). Migrations enable RLS on every new table.
 - After changing an endpoint, run `dotnet build backend -v q` so `docs/api/Handyman.Api.json` is regenerated.

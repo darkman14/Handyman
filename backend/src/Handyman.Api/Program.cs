@@ -28,6 +28,10 @@ builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection(Sup
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"),
         npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", AppDbContext.Schema)));
+builder.Services.AddDbContext<ReadDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+        .AddInterceptors(new ReadOnlySessionInterceptor())
+        .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
 builder.Services.AddCqrs(typeof(Program).Assembly);
 builder.Services.AddHttpClient<IBlobStorage, SupabaseStorage>();
 builder.Services.AddSupabaseJwt();
