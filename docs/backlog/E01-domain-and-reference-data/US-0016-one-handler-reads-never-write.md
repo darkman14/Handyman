@@ -3,7 +3,7 @@ id: US-0016
 title: Every use case has one handler and reads never write
 epic: E01
 feature: F01.3
-status: in-progress
+status: in-qa
 ---
 
 ## Story
@@ -46,9 +46,14 @@ As a developer on the team, I want the build to catch a use case with no handler
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
+| AC1 | pass (code and test level): `ArchitectureTests.Every_command_and_query_in_the_api_has_exactly_one_handler`, `Two_handlers_for_one_command_are_reported`, `US_0016_MutationTests.AC1_*` (also two handlers via inheritance) | n/a |
+| AC2 | pass with gap, see BUG-0003 (low): `ArchitectureTests.No_query_handler_depends_on_AppDbContext...`, `US_0016_MutationTests.AC2_*` | n/a |
+| AC3 | pass: `HandlerRegistrationTests.Every_handler_resolves_from_a_scope_wrapped_in_the_decorators_in_the_right_order`, `Decorators_and_open_generics_are_never_registered_as_handlers...` | n/a |
+| AC4 | pass for SaveChanges/SaveChangesAsync and no tracking (`ReadDbContextTests`, `US_0016_ReadsNeverWriteTests.AC4_*`); fail for ExecuteUpdate/ExecuteDelete/ExecuteSql, BUG-0002 (medium): `AC4_ExecuteUpdate_...`, `AC4_ExecuteDelete_...`, `AC4_ExecuteSql_...` | n/a |
 
 ## Dev notes
+- QA: the build, OpenAPI file (EOL only), SchemaTests and `dotnet ef migrations add --context AppDbContext` are unaffected; the generated migration was empty (ReadDbContext adds no schema change) and was deleted.
+- QA: mutation checks of the AC2 rule. Caught: constructor parameter, primary constructor, field, property, `Func<>`, `Lazy<>`, `IDbContextFactory<>`, base class taking the wrong context (both directions), class implementing both handler interfaces. Not caught: `IServiceProvider`, plain `DbContext`, transitive dependency through a helper service (BUG-0003). Rule for the E03+ handlers: do not inject `IServiceProvider` or helper services that take a context into handlers until the rule is hardened.
+- QA: AC1 rules catch a missing handler, two handlers, an internal handler and two handlers through inheritance. Registration is automatic by assembly scan, so a handler cannot be left unregistered.
+- QA: no navigation properties exist in the model, so `Include` is not applicable today; `Find`, projection, joins and `FromSql` leave the change tracker empty. With auto-detect off, reads still see rows committed by other contexts.
+- QA: tests in `Acceptance/US_0016_OneHandlerReadsNeverWriteTests.cs`; the three `AC4_Execute*` tests fail until BUG-0002 is fixed; the three `*_NOT_caught_known_gap` tests pass now and must be flipped when BUG-0003 is fixed.
