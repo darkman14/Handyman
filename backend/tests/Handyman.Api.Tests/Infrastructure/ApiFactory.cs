@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Handyman.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -29,6 +30,15 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseEnvironment("Test");
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("Supabase:Url", "http://test.local");
+
+        // appsettings.Local.json is added after host settings (Test counts as local), so UseSetting alone loses
+        // against a developer's local connection string and the tests would write into the dev database.
+        // ConfigureAppConfiguration is applied last and wins.
+        builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Default"] = _postgres.GetConnectionString(),
+            ["Supabase:Url"] = "http://test.local",
+        }));
 
         builder.ConfigureServices(services =>
         {

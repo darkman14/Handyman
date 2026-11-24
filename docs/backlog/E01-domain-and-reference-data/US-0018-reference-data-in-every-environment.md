@@ -3,7 +3,7 @@ id: US-0018
 title: Reference data is in place in every environment
 epic: E01
 feature: F01.4
-status: ready
+status: in-progress
 ---
 
 ## Story

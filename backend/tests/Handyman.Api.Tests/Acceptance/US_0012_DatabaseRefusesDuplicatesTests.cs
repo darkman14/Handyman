@@ -141,7 +141,7 @@ public class US_0012_DatabaseRefusesDuplicatesTests(SchemaFixture fx) : IClassFi
 
     // AC4
     [Theory]
-    [InlineData("VRACAR01", "vracar01")]
+    [InlineData("CODEONE1", "codeone1")]
     [InlineData("ZEMUN01", "ZEMUN01")]
     [InlineData("NBG01", "  nbg01 ")]
     public async Task A_store_with_the_same_referral_code_in_any_case_or_spacing_is_refused(string first, string second)

@@ -26,3 +26,6 @@ Seen in subagent runs on 2026-11-19 and 2026-11-24; not reproduced in two clean 
 
 ## Suggested fix (optional)
 Share one container per test class collection or cap test parallelism for container-based tests; find any wall-clock assertions in US_0012 tests and replace them with deterministic checks.
+
+## Update 2026-11-24 (US-0018)
+Possible root cause found by backend-dev: before US-0018 every ApiFactory-based test class ran against the local Supabase database (localhost:54322, about 1130 leftover trades), not its own Testcontainers container, because `Program.cs` loads appsettings.Local.json after the host settings so the factory's `UseSetting` lost. `ApiFactory` now sets ConnectionStrings:Default and Supabase:Url through ConfigureAppConfiguration. Shared state between parallel test classes is a likely source of the timing-sensitive failure. Keep this bug open until the suite has run clean many times in a row.
