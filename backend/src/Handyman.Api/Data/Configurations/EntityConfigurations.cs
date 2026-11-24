@@ -93,6 +93,7 @@ public class JobConfiguration : IEntityTypeConfiguration<Job>
         b.Property(x => x.Apartment).HasMaxLength(20);
         b.Property(x => x.AddressNote).HasMaxLength(500);
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.Version).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
         b.HasOne<User>().WithMany().HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Trade>().WithMany().HasForeignKey(x => x.TradeId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<Area>().WithMany().HasForeignKey(x => x.AreaId).OnDelete(DeleteBehavior.Restrict);
@@ -120,6 +121,7 @@ public class BidConfiguration : IEntityTypeConfiguration<Bid>
         b.Property(x => x.Id).ValueGeneratedNever();
         b.Property(x => x.Note).HasMaxLength(1000);
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+        b.Property(x => x.Version).HasColumnName("xmin").HasColumnType("xid").ValueGeneratedOnAddOrUpdate().IsConcurrencyToken();
         b.HasOne<Job>().WithMany().HasForeignKey(x => x.JobId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<User>().WithMany().HasForeignKey(x => x.WorkerId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.JobId, x.WorkerId }).IsUnique(); // one bid per worker per job, withdrawn included

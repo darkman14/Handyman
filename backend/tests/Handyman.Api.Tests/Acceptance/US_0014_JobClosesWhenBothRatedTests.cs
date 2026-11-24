@@ -170,7 +170,7 @@ public class US_0014_JobClosesWhenBothRatedTests(SchemaFixture fx) : IClassFixtu
         {
             await using var db = fx.NewContext();
             await using var tx = await db.Database.BeginTransactionAsync();
-            var job = await db.Jobs.FromSqlRaw("SELECT * FROM app.jobs WHERE id = {0} FOR UPDATE", jobId).SingleAsync();
+            var job = await db.Jobs.FromSqlRaw("SELECT *, xmin FROM app.jobs WHERE id = {0} FOR UPDATE", jobId).SingleAsync();
             var acc = await db.Bids.SingleAsync(b => b.Id == job.AcceptedBidId);
             var ratings = await db.Ratings.Where(r => r.JobId == jobId).ToListAsync();
             db.Ratings.Add(job.AddRating(rater, 4, null, Now, acc, ratings));

@@ -29,6 +29,8 @@ public class Job
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? FinishedAt { get; private set; }
     public DateTimeOffset? ClosedAt { get; private set; }
+    /// <summary>Postgres xmin system column, the optimistic concurrency token. Not a real column; set by the database.</summary>
+    public uint Version { get; private set; }
 
     /// <summary>
     /// Open -> Assigned. <paramref name="jobBids"/> must be all bids of this job, including the hired one.
@@ -143,6 +145,8 @@ public class Bid
     public string? Note { get; set; }
     public BidStatus Status { get; internal set; } = BidStatus.Active;
     public DateTimeOffset CreatedAt { get; set; }
+    /// <summary>Postgres xmin system column, the optimistic concurrency token. Not a real column; set by the database.</summary>
+    public uint Version { get; private set; }
 }
 
 public class Rating

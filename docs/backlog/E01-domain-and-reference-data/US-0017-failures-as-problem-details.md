@@ -3,7 +3,7 @@ id: US-0017
 title: Failures come back as problem details without internals
 epic: E01
 feature: F01.3
-status: in-progress
+status: in-qa
 ---
 
 ## Story
@@ -50,11 +50,11 @@ As a client or worker, I want the app to tell me clearly why something didn't wo
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass (`Domain_error_returns_409_with_its_stable_code`, `Failure_inside_a_command_rolls_back_sends_no_push_and_maps_correctly` domain) | n/a |
+| AC2 | pass for the mapping, caveat BUG-0008 medium (`Concurrency_conflict_returns_409_job_not_open_without_internals`, `Failure_inside_a_command_...` concurrency, `KNOWN_GAP_BUG_0008_job_has_no_concurrency_token`) | n/a |
+| AC3 | pass (`Not_found_returns_404_with_thing_not_found_code`, `Failure_inside_a_command_...` notfound) | n/a |
+| AC4 | pass; gaps BUG-0005, BUG-0006, BUG-0007, all low (`Missing_and_invalid_fields_return_400_...`, `Body_variants_give_the_expected_status_and_never_500`, `Validation_errors_are_camel_cased_...`, `Bad_route_and_query_values_are_400_validation_failed`) | n/a |
+| AC5 | pass (`Unexpected_failure_returns_500_without_internals_in_any_environment`, `Server_error_leaks_nothing_in_development_and_production_like_environments`, `Unexpected_failure_is_logged_at_error_level_by_the_handler`) | n/a |
 
 ## Dev notes
 
@@ -66,3 +66,9 @@ As a client or worker, I want the app to tell me clearly why something didn't wo
   - Other rejected requests (for example 415) keep their status with `request_rejected`.
 - Validation is a reflection-based endpoint filter on the `/api` group (the built-in `AddValidation()` didn't cover test-assembly types and its 400 has no `code`). It does not walk nested objects: keep request records flat.
 - The problem-details `type` is a placeholder (`https://httpstatuses.io/<status>`).
+
+- QA (qa-api, 2026-11-24): 265 backend tests green. New file `Acceptance/US_0017_QaFailuresAsProblemDetailsTests.cs`: real decorator chain (rollback, no push, correct mapping for domain, concurrency, not-found, 500), Development and Production environments, inner exceptions, body variants, client abort, auth unchanged. Known gaps are kept as passing `KNOWN_GAP_BUG_000x` tests that must be flipped when fixed.
+- Real pipeline (Development, local Supabase): /health 200; no or bad token 401 (empty body, WWW-Authenticate); unknown route 404 and wrong method 405 have empty bodies (BUG-0005); CORS preflight 204 for an allowed origin. Seeded sign-in is not available yet (dev-token.sh fails until US-0003), so authenticated calls were checked through ApiFactory only.
+- Double logging: not measured at runtime. By design the framework's ExceptionHandlerMiddleware logs the exception and ApiExceptionHandler logs it again, so two Error entries per 500; acceptable. The handler's own entry is exactly one, and a client abort produces no Error entry from it.
+- A DomainException wrapped inside another exception type is a 500 by design (exact type mapping): handlers must not wrap it.
+- OpenAPI file content unchanged by the build (only line endings).
