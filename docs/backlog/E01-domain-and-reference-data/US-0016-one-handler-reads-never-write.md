@@ -3,7 +3,7 @@ id: US-0016
 title: Every use case has one handler and reads never write
 epic: E01
 feature: F01.3
-status: in-qa
+status: done
 ---
 
 ## Story
@@ -49,7 +49,7 @@ As a developer on the team, I want the build to catch a use case with no handler
 | AC1 | pass (code and test level): `ArchitectureTests.Every_command_and_query_in_the_api_has_exactly_one_handler`, `Two_handlers_for_one_command_are_reported`, `US_0016_MutationTests.AC1_*` (also two handlers via inheritance) | n/a |
 | AC2 | pass with gap, see BUG-0003 (low): `ArchitectureTests.No_query_handler_depends_on_AppDbContext...`, `US_0016_MutationTests.AC2_*` | n/a |
 | AC3 | pass: `HandlerRegistrationTests.Every_handler_resolves_from_a_scope_wrapped_in_the_decorators_in_the_right_order`, `Decorators_and_open_generics_are_never_registered_as_handlers...` | n/a |
-| AC4 | pass for SaveChanges/SaveChangesAsync and no tracking (`ReadDbContextTests`, `US_0016_ReadsNeverWriteTests.AC4_*`); fail for ExecuteUpdate/ExecuteDelete/ExecuteSql, BUG-0002 (medium): `AC4_ExecuteUpdate_...`, `AC4_ExecuteDelete_...`, `AC4_ExecuteSql_...` | n/a |
+| AC4 | pass (re-verified after ff1c0a4): SaveChanges, no tracking, ExecuteUpdate/ExecuteDelete/ExecuteSql (BUG-0002 fixed) (`ReadDbContextTests`, `US_0016_ReadsNeverWriteTests.AC4_*`, `US_0016_ReadOnlyHardeningTests.*`); known gap BUG-0004 (low, deliberate code only): `Select_set_config_then_cte_delete_on_one_open_connection_must_not_write` fails | n/a |
 
 ## Dev notes
 - QA: the build, OpenAPI file (EOL only), SchemaTests and `dotnet ef migrations add --context AppDbContext` are unaffected; the generated migration was empty (ReadDbContext adds no schema change) and was deleted.

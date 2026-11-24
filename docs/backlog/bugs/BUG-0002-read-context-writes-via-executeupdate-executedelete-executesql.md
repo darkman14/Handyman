@@ -4,7 +4,7 @@ title: ReadDbContext can still write through ExecuteUpdate, ExecuteDelete and Da
 story: US-0016
 criterion: AC4
 severity: medium
-status: open
+status: fixed
 found-by: qa-api
 ---
 
@@ -23,6 +23,9 @@ All three execute immediately on the connection and change the data. Only `SaveC
 - Failing tests (in `Acceptance/US_0016_OneHandlerReadsNeverWriteTests.cs`): `AC4_ExecuteUpdate_through_the_read_context_must_not_write`, `AC4_ExecuteDelete_through_the_read_context_must_not_write`, `AC4_ExecuteSql_through_the_read_context_must_not_write`.
 - Same applies to `ExecuteSqlRaw`, `ExecuteSqlInterpolated` and their async versions (same code path as `ExecuteSql`).
 - The literal AC4 text (SaveChanges) passes; this is a gap in the intent.
+
+## Re-verification (commit ff1c0a4)
+The three original tests pass, plus `US_0016_ReadOnlyHardeningTests` (CTE delete, comment/BOM prefix, multi-statement, writing function, FOR UPDATE, DDL, COPY, SET via FromSql, explicit transaction, pooled reuse, same-scope AppDbContext writes). One residual deliberate-code bypass is tracked as BUG-0004 (low).
 
 ## Suggested fix (optional)
 Defense in depth, pick one or combine:
