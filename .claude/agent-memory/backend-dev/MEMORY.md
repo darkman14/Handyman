@@ -1,0 +1,1 @@
+- [ApiFactory vs appsettings.Local.json](feedback_apifactory_local_json.md) — test host config must be overridden via ConfigureAppConfiguration, else tests hit the dev DB

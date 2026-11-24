@@ -1,0 +1,1 @@
+- [Env quirks and migration weak spots](feedback_env_quirks.md) — docker exec silent, probe local DB via Npgsql, duplicate-name/Down pitfalls
