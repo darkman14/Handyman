@@ -73,7 +73,9 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 }).WithName("Health");
 
 var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<ValidationFilter>();
-api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new { id = user.Id() })).WithName("GetMe");
+api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new { id = user.Id() })).WithName("GetMe")
+    .ProducesProblem(StatusCodes.Status403Forbidden)  // user_blocked
+    .ProducesProblem(StatusCodes.Status404NotFound);  // profile_missing
 Handyman.Api.Features.Trades.ListTrades.Map(api);
 Handyman.Api.Features.Areas.ListAreas.Map(api);
 

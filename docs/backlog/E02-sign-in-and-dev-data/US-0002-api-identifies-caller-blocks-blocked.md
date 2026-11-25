@@ -3,7 +3,7 @@ id: US-0002
 title: API identifies the caller and refuses blocked users
 epic: E02
 feature: F02.1
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -45,7 +45,34 @@ As a client or worker, I want the platform to shut out users an admin has blocke
 - 2026-11-10: endpoints other than `GET /me` and `PUT /me` answer a signed-in user with no `app.users` row with `404` and code `profile_missing`, same as `GET /me`. Built with the E03 endpoints; this story only guarantees AC4.
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No new endpoints and no new request/response shapes. This story changes behaviour of existing `/api` calls.
+
+**Blocked user (every `/api/*` call, including `GET /api/me`, `GET /api/trades`, `GET /api/areas`)**
+- Condition: valid token whose `sub` matches an `app.users` row with `blocked_at` not null (any value, even in the future).
+- Response: `403`, `application/problem+json`, `code: "user_blocked"` (distinct from `not_allowed`). No data is changed.
+- Anonymous requests and invalid/expired tokens are not affected: they stay anonymous (public endpoints `200`, protected ones `401` as in US-0001). The block check only applies when a valid token was authenticated.
+- `GET /health` is outside `/api` and never returns `user_blocked` (`200` for blocked users too).
+- Takes effect on the next request after `blocked_at` is set; clearing `blocked_at` restores access on the next request.
+
+**GET /api/me** (signed in)
+| Case | Response |
+| --- | --- |
+| `app.users` row, not blocked | `200` `{ "id": "<caller's app.users id>" }` (the E03 story extends this to the full profile) |
+| Blocked | `403` `user_blocked` |
+| Valid token, no `app.users` row (first sign-in, or deleted user) | `404` problem-details `code: "profile_missing"` (not 403, not 500) |
+| No/invalid token | `401` (unchanged) |
+
+Other `/api` endpoints keep their current behaviour for a user with no row (the public reference data stays `200`). The `404 profile_missing` for future user-scoped endpoints comes with E03 (see Decisions).
+
+OpenAPI: `GET /api/me` now declares `403` and `404` problem responses (the only contract-file change).
+
+**Design question for build mode: where to enforce**
+- Middleware placed after `UseAuthentication()` (and before `UseAuthorization()`/endpoints), applied only to paths under `/api`, so `/health` and `/openapi` are untouched.
+- Runs on every request (no caching of the blocked state, or only a cache short enough that AC3 "immediate" holds; simplest is no cache). Only acts when `context.User.Identity.IsAuthenticated`; anonymous requests pass through, so public endpoints stay open.
+- One cheap lookup per request: primary-key query on `app.users` by `sub`, selecting only `blocked_at` (e.g. `ReadDbContext`, `AnyAsync(u => u.Id == id && u.BlockedAt != null)`), no tracking, no entity load. PK index suffices.
+- Writes the 403 through the existing problem-details writer (US-0017) with `code = user_blocked`, short-circuiting before the handler, so no state changes.
+- `GET /me` needs to know if the row exists for `profile_missing`: either the same middleware lookup stores "exists/blocked" in `HttpContext.Items`, or the `/me` handler checks the row itself. Prefer one lookup per request shared via `Items`.
+- Existing tests that call `/api/me` with `factory.ClientFor(userId)` need that user to exist in `app.users`; `US_0019_QaExploratoryTests.cs:40` already notes it must be updated for `user_blocked`.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -57,3 +84,5 @@ As a client or worker, I want the platform to shut out users an admin has blocke
 | AC5 | | n/a |
 
 ## Dev notes
+- Contract mode: only `Program.cs` changed (`GET /me` now declares 403 and 404 problem responses); the regenerated `docs/api/Handyman.Api.json` diff is real content, not line endings.
+- Behaviour (block middleware, `/me` 404) is not implemented yet.
