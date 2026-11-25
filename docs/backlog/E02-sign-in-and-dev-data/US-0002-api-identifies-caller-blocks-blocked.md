@@ -3,7 +3,7 @@ id: US-0002
 title: API identifies the caller and refuses blocked users
 epic: E02
 feature: F02.1
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -77,11 +77,13 @@ OpenAPI: `GET /api/me` now declares `403` and `404` problem responses (the only 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass: `Ac1_me_returns_the_callers_own_id`, `Ac1_unblocked_users_of_every_role_are_handled`, `Parallel_blocked_and_unblocked_users_do_not_cross_talk_and_me_returns_own_id` | n/a |
+| AC2 | pass: `Ac2_blocked_user_gets_403_user_blocked_on_every_api_path`, `Ac2_no_data_is_changed_by_a_refused_call`, `Refused_calls_do_not_touch_the_users_row` (xmin), `Blocked_user_gets_403_not_400_or_404_whatever_the_path_or_query`, `Extreme_blocked_at_values_still_block`, `Blocked_response_has_problem_shape_no_user_data_and_no_cacheable_headers` | n/a |
+| AC3 | pass: `Ac3_blocking_takes_effect_on_the_next_call_with_the_same_token`, `Block_takes_effect_for_every_request_started_after_the_update_even_in_parallel`, `Unblock_then_block_flapping_always_follows_the_latest_state` | n/a |
+| AC4 | pass: `Ac4_valid_token_without_a_users_row_gets_404_profile_missing_on_me`, `Deleted_user_mid_session_gets_404_on_me_and_200_on_public_data` | n/a |
+| AC5 | pass: `Ac5_health_still_returns_200_for_a_blocked_user`, `Health_and_openapi_are_never_user_blocked` | n/a |
+
+QA (api) exploratory: 25 extra tests in `US_0002_QaExploratoryTests.cs`, no defects found. Also verified: bad token of a blocked user is 401, CORS preflight without a token is unaffected, DB failure gives 500 problem+json with no internals and never fails open.
 
 ## Dev notes
 - Contract mode: only `Program.cs` changed (`GET /me` now declares 403 and 404 problem responses); the regenerated `docs/api/Handyman.Api.json` diff is real content, not line endings.
