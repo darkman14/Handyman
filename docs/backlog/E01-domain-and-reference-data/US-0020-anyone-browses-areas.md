@@ -3,7 +3,7 @@ id: US-0020
 title: Anyone can browse areas level by level
 epic: E01
 feature: F01.4
-status: ready
+status: done
 ---
 
 ## Story
@@ -49,15 +49,26 @@ As a client posting a request, I want to find my neighborhood by first picking m
 - Depends on US-0018 (the area tree) and US-0017 (`400 validation_failed` for AC5).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+### `GET /api/areas?parentId=`
+- Auth: anonymous (`AllowAnonymous`). A bad or expired token is treated as anonymous.
+- Query: `parentId` optional, declared as a string in the OpenAPI file (the handler parses it so that an empty value and a bad value give the documented answers); send the integer id as text. Missing or empty (`parentId=`) means the top level (cities).
+- `200` response: JSON array, ordered by name in Serbian Latin alphabetical order:
+  `[{ "id": 1, "name": "Beograd", "kind": "city" }]`
+  - `id`: integer. `name`: string. `kind`: `"city"`, `"municipality"` or `"neighborhood"` (lowercase).
+  - Unknown id or neighborhood id as `parentId`: `200` with `[]`.
+- `400` problem details, `code` = `validation_failed`, naming `parentId`, when `parentId` is not an integer (e.g. `abc`).
+- `403 user_blocked` for a valid token of a blocked user, once US-0002 is built.
+- Response record: `AreaResponse(int Id, string Name, string Kind)`.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass: `Anonymous_without_parentId_gets_only_Beograd`, `An_empty_parentId_is_the_top_level`, `Missing_empty_or_blank_parentId_is_the_top_level`, `Response_is_json_and_a_signed_in_or_bogus_token_changes_nothing` | n/a |
+| AC2 | pass: `Beograd_has_three_municipalities`, `Every_level_is_sorted_in_Serbian_Latin_order_with_the_right_kind_and_shape`, `Each_item_has_exactly_id_name_kind_...` | n/a |
+| AC3 | pass: `Vracar_has_six_neighborhoods_in_Serbian_Latin_order`, `Zvezdara_puts_C_before_Dj_before_K`, `Every_level_is_sorted_...` (all parents) | n/a |
+| AC4 | pass: `A_neighborhood_or_unknown_id_as_parent_gives_an_empty_list`, `Int_boundaries_return_an_empty_list_not_an_error` | n/a |
+| AC5 | pass (low gap BUG-0014): `Bad_parentId_values_give_400_validation_failed_naming_parentId_without_internals` (18 values), `A_very_long_parentId_gives_400_not_500`, `KNOWN_GAP_BUG_0014_...` | n/a |
 
 ## Dev notes
+- Contract skeleton in `Features/Areas/ListAreas.cs`; handler throws `NotImplementedException` until build mode.
+- Build mode: sorting must use a Serbian Latin collation in memory (not the database default) so Č sorts after C and Đ after D; check the `parentId=abc` path really returns `validation_failed` naming `parentId`.
