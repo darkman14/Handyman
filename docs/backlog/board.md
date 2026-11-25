@@ -2,7 +2,7 @@
 
 | ID | Title | Epic | Status |
 | --- | --- | --- | --- |
-| US-0001 | API rejects calls without a valid sign-in token | E02 | ready |
+| US-0001 | API rejects calls without a valid sign-in token | E02 | in-progress |
 | US-0002 | API identifies the caller and refuses blocked users | E02 | ready |
 | US-0003 | Seeded users can sign in locally | E02 | ready |
 | US-0004 | Seeder runs only where it is allowed | E02 | ready |

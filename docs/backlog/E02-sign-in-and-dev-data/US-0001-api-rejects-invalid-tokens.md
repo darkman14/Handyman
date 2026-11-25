@@ -3,7 +3,7 @@ id: US-0001
 title: API rejects calls without a valid sign-in token
 epic: E02
 feature: F02.1
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -44,7 +44,17 @@ As a client or worker, I want the API to act only on requests that carry my vali
 - 2026-11-10: the public reference-data endpoints are excluded from the `401` rule; an expired or garbage token on a public endpoint is treated as anonymous (E01 US-0019 decision; now in AC1 to AC4).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No new endpoints and no request/response changes. The OpenAPI file does not list `401` for any endpoint (the project documents only success shapes; `401`/`403` come from the auth middleware), so `docs/api/Handyman.Api.json` is unchanged.
+
+**Rule for every endpoint under `/api`** (the group is `RequireAuthorization()`): header `Authorization: Bearer <Supabase access token>`.
+- `401`, empty body (no problem-details, see Out of scope), when: header missing; scheme not `Bearer`; token malformed; signature invalid; issuer is not `<Supabase URL>/auth/v1`; audience is not `authenticated`; token expired; `sub` missing, empty or not a GUID.
+- Anything else valid reaches the handler; business errors use the normal codes (400/403/404/409).
+
+**Public (no `401`, bad or expired token treated as anonymous):** `GET /api/trades`, `GET /api/areas` (`AllowAnonymous`).
+
+**`GET /health`**: outside `/api`, no auth, `200 {"status":"ok"}` with any or no `Authorization` header.
+
+**`GET /api/me`** (authenticated): `200` with `{ "id": "<guid>" }` where `id` is the token `sub` (= `app.users.id`). Profile shape comes in E03. `401` as above.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
