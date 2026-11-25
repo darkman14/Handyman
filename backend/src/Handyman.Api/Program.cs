@@ -2,6 +2,7 @@ using System.Reflection;
 using Handyman.Api.Auth;
 using Handyman.Api.Cqrs;
 using Handyman.Api.Data;
+using Handyman.Api.Data.Seed;
 using Handyman.Api.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -22,7 +23,9 @@ if (builder.Environment.IsDevelopment())
     builder.WebHost.UseUrls("http://0.0.0.0:5080"); // reachable from phones on the LAN
 }
 
-builder.Host.UseSerilog((context, logger) => logger.ReadFrom.Configuration(context.Configuration).WriteTo.Console());
+builder.Host.UseSerilog((context, services, logger) =>
+    logger.ReadFrom.Configuration(context.Configuration).ReadFrom.Services(services).WriteTo.Console(),
+    preserveStaticLogger: true); // one logger per host, so parallel test hosts do not share log output
 
 builder.Services.Configure<SupabaseOptions>(builder.Configuration.GetSection(SupabaseOptions.Section));
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -35,6 +38,8 @@ builder.Services.AddDbContext<ReadDbContext>(options =>
 builder.Services.AddCqrs(typeof(Program).Assembly);
 builder.Services.AddHttpClient<IBlobStorage, SupabaseStorage>();
 builder.Services.AddSupabaseJwt();
+builder.Services.AddHttpClient<ISupabaseAdminClient, SupabaseAdminClient>();
+builder.Services.AddScoped<DevSeeder>();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -57,6 +62,10 @@ if (!isDocGeneration && migrateOnStartup)
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
+// Seeding needs Seed:Enabled and a Development/Test environment; otherwise it is refused with a logged error.
+// Never during the build-time OpenAPI generation (no database, no Supabase).
+if (!isDocGeneration)
+    await DevSeedStartup.RunAsync(app.Services, app.Environment, app.Configuration);
 
 app.UseExceptionHandler(); // first, so it catches everything below; 401/403 are not exceptions and stay as they are
 app.UseSerilogRequestLogging();

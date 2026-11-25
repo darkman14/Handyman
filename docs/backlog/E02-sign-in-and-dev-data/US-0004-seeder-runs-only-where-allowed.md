@@ -3,7 +3,7 @@ id: US-0004
 title: Seeder runs only where it is allowed
 epic: E02
 feature: F02.2
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -41,7 +41,7 @@ As the product owner, I want the development seeder to be impossible to run in P
 - 2026-11-10: the seeder runs only in Development and Test; every other environment (Production, `Staging`, unknown names) is refused like Production (now in AC1).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -52,3 +52,7 @@ As the product owner, I want the development seeder to be impossible to run in P
 | AC4 | | n/a |
 
 ## Dev notes
+- Startup logic: `Data/Seed/DevSeeder.cs` (`DevSeedStartup.RunAsync`, called from `Program.cs`, skipped when the entry assembly is `GetDocument.Insider`). Allowed: environment name equals Development or Test (any casing) and `Seed:Enabled` true; then migrate, then run every registered `IDevSeedStep`. Other environments log an error and seed nothing (no migration either, unless `Database:MigrateOnStartup` is set).
+- US-0003/0005/0006: add seed steps as scoped `IDevSeedStep`; use `ISupabaseAdminClient` (faked in tests).
+- `ApiFactory` now forces `Seed:Enabled=false` because a developer's `appsettings.Local.json` enables it.
+- Serilog now uses `preserveStaticLogger: true` (one logger per host) so tests can capture logs through a DI `ILogEventSink`.
