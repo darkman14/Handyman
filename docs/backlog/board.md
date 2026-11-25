@@ -31,7 +31,7 @@
 | BUG-0007 | Nested request objects are not validated (US-0017 AC4, low) | E01 | open |
 | BUG-0008 | Job has no concurrency token; real concurrent saves never raise a conflict (US-0017 AC2, medium) | E01 | verified |
 | BUG-0010 | Parallel ratings by both parties leave the job Done, not Closed; xmin cannot detect it (US-0017 AC2, medium) | E01 | open (E07) |
-| BUG-0009 | Flaky backend tests: container start timeout and a timing-sensitive US_0012 test (test reliability, medium) | E01 | open |
+| BUG-0009 | Flaky backend tests: container start timeout and a timing-sensitive US_0012 test (test reliability, medium) | E01 | fixed |
 | BUG-0011 | ReferenceData migration aborts when areas has duplicate parent names (US-0018 AC5, medium) | E01 | verified |
 | BUG-0012 | ReferenceData Down deletes a foreign neighborhood on a reference id and fails on child areas (US-0018 AC4, low) | E01 | open |
 | BUG-0013 | JWKS download has no short timeout and runs under a lock; a hanging Supabase stalls bearer-token requests incl. public ones (US-0019 AC5, low) | E01 | open |

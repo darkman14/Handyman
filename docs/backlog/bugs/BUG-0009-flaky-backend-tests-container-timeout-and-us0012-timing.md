@@ -4,7 +4,7 @@ title: Backend test suite occasionally fails once on a Testcontainers start time
 story: US-0017
 criterion: none (test reliability)
 severity: medium
-status: open
+status: fixed
 found-by: coordinator
 ---
 
@@ -35,3 +35,10 @@ In a full `dotnet test backend --no-build` run (second of two back-to-back runs,
 
 ## Severity raised to medium 2026-11-24
 Four full-suite runs in one day had failures (once 10 tests, once 3, once 2): about one in three full runs. It makes CI unreliable. Fix as its own `fix/*` branch (cap test parallelism for container tests or share one container per collection), not inside a feature story.
+
+## Fix
+Root cause: 25 test fixtures (ApiFactory per class, SchemaFixture, QaFixture, DecoratorFixture and three per-class `PostgreSqlContainer`s) each started their own `postgres:17-alpine` container, and xUnit runs those classes in parallel. A full run therefore started about 25 containers at once through Docker in WSL; under that load `pg_ctl` timed out ("server did not start in time", `container ... is not running`). One failed fixture start fails every test of its class in 1 ms, which explains all earlier reports (US_0012, HealthAndAuthTests, ReadOnlySessionTests, US_0017). No wall-clock assertion was involved; the "timing-sensitive" US_0012 test was the same fixture start failure.
+
+Change (tests only, no product code): new `backend/tests/Handyman.Api.Tests/Infrastructure/TestDatabase.cs` with `SharedPostgres` (one container per test run, started lazily once, `max_connections=1000`, `fsync=off`) and `TestDatabase` (a fresh empty database per fixture, dropped on dispose). The six fixtures that built a `PostgreSqlContainer` now use `TestDatabase` instead; test bodies are unchanged. Parallelism is unchanged, isolation per class is kept (own database).
+
+Numbers (342 tests, this machine): before, 2 of 4 full runs failed (31 and 2+ tests, all container start errors), 137-156 s per run. After, 9 of 9 full runs passed, 39-43 s per run.

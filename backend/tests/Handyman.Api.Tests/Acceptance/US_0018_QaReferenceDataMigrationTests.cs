@@ -17,7 +17,7 @@ namespace Handyman.Api.Tests.Acceptance;
 public class US_0018_QaReferenceDataMigrationTests : IAsyncLifetime
 {
     private const string Before = "20261124164959_AddXminConcurrencyTokens";
-    private readonly PostgreSqlContainer _pg = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _pg = new();
     private static int _db;
 
     public Task InitializeAsync() => _pg.StartAsync();

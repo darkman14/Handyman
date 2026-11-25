@@ -14,7 +14,7 @@ namespace Handyman.Api.Tests.Infrastructure;
 
 public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly TestDatabase _postgres = new();
 
     public FakeBlobStorage Blobs { get; } = new();
 
