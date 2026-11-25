@@ -3,7 +3,7 @@ id: US-0020
 title: Anyone can browse areas level by level
 epic: E01
 feature: F01.4
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -49,7 +49,16 @@ As a client posting a request, I want to find my neighborhood by first picking m
 - Depends on US-0018 (the area tree) and US-0017 (`400 validation_failed` for AC5).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+### `GET /api/areas?parentId=`
+- Auth: anonymous (`AllowAnonymous`). A bad or expired token is treated as anonymous.
+- Query: `parentId` optional integer. Missing or empty (`parentId=`) means the top level (cities).
+- `200` response: JSON array, ordered by name in Serbian Latin alphabetical order:
+  `[{ "id": 1, "name": "Beograd", "kind": "city" }]`
+  - `id`: integer. `name`: string. `kind`: `"city"`, `"municipality"` or `"neighborhood"` (lowercase).
+  - Unknown id or neighborhood id as `parentId`: `200` with `[]`.
+- `400` problem details, `code` = `validation_failed`, naming `parentId`, when `parentId` is not an integer (e.g. `abc`).
+- `403 user_blocked` for a valid token of a blocked user, once US-0002 is built.
+- Response record: `AreaResponse(int Id, string Name, string Kind)`.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -61,3 +70,5 @@ As a client posting a request, I want to find my neighborhood by first picking m
 | AC5 | | n/a |
 
 ## Dev notes
+- Contract skeleton in `Features/Areas/ListAreas.cs`; handler throws `NotImplementedException` until build mode.
+- Build mode: sorting must use a Serbian Latin collation in memory (not the database default) so Č sorts after C and Đ after D; check the `parentId=abc` path really returns `validation_failed` naming `parentId`.
