@@ -159,7 +159,7 @@ export interface operations {
     ListAreas: {
         parameters: {
             query?: {
-                parentId?: number | string;
+                parentId?: string;
             };
             header?: never;
             path?: never;

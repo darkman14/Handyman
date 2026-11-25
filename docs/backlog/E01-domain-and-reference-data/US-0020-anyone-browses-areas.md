@@ -51,7 +51,7 @@ As a client posting a request, I want to find my neighborhood by first picking m
 ## API contract
 ### `GET /api/areas?parentId=`
 - Auth: anonymous (`AllowAnonymous`). A bad or expired token is treated as anonymous.
-- Query: `parentId` optional integer. Missing or empty (`parentId=`) means the top level (cities).
+- Query: `parentId` optional, declared as a string in the OpenAPI file (the handler parses it so that an empty value and a bad value give the documented answers); send the integer id as text. Missing or empty (`parentId=`) means the top level (cities).
 - `200` response: JSON array, ordered by name in Serbian Latin alphabetical order:
   `[{ "id": 1, "name": "Beograd", "kind": "city" }]`
   - `id`: integer. `name`: string. `kind`: `"city"`, `"municipality"` or `"neighborhood"` (lowercase).

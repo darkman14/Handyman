@@ -7,6 +7,13 @@ using Microsoft.Extensions.Options;
 
 namespace Handyman.Api.Infrastructure;
 
+/// <summary>A query/route parameter that cannot be read; answered as 400 validation_failed with <c>errors</c> naming it.</summary>
+public sealed class InvalidParameterException(string parameter, string message)
+    : BadHttpRequestException(message, StatusCodes.Status400BadRequest)
+{
+    public string Parameter { get; } = parameter;
+}
+
 /// <summary>
 /// The one place where exceptions become HTTP responses (RFC 7807, content type application/problem+json).
 /// Every body has a stable <c>code</c>. Unknown failures give a fixed 500 text: no message, stack, SQL or connection details,
@@ -45,6 +52,8 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
             logger.LogInformation("Request refused with {Status} {Code}: {Message}", status, code, exception.Message);
 
         var problem = ProblemFor(status, code, title, detail);
+        if (exception is InvalidParameterException invalid)
+            problem.Extensions["errors"] = new Dictionary<string, string[]> { [invalid.Parameter] = [detail] };
         await WriteAsync(httpContext, problem, jsonOptions.Value.SerializerOptions, cancellationToken);
         return true;
     }
@@ -56,6 +65,7 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
             "The job changed while you were working on it. It is no longer open."),
         NotFoundException e => (StatusCodes.Status404NotFound, e.Code, "Not found", e.Message),
         // Malformed JSON, wrong content type, unparsable route/query values: the framework's own 4xx.
+        InvalidParameterException e => (StatusCodes.Status400BadRequest, ValidationFailed, "Validation failed", e.Message),
         BadHttpRequestException { StatusCode: not StatusCodes.Status400BadRequest } e => (e.StatusCode, "request_rejected",
             "Request rejected", "The request was rejected."),
         BadHttpRequestException => (StatusCodes.Status400BadRequest, ValidationFailed, "Validation failed",
