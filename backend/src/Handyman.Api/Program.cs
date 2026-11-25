@@ -62,6 +62,7 @@ app.UseExceptionHandler(); // first, so it catches everything below; 401/403 are
 app.UseSerilogRequestLogging();
 app.UseCors();
 app.UseAuthentication();
+app.UseMiddleware<CallerStatusMiddleware>(); // 403 user_blocked for blocked callers; shares the users lookup with GET /me
 app.UseAuthorization();
 
 app.MapOpenApi();
@@ -73,7 +74,16 @@ app.MapGet("/health", async (AppDbContext db, CancellationToken ct) =>
 }).WithName("Health");
 
 var api = app.MapGroup("/api").RequireAuthorization().AddEndpointFilter<ValidationFilter>();
-api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user) => Results.Ok(new { id = user.Id() })).WithName("GetMe");
+api.MapGet("/me", (System.Security.Claims.ClaimsPrincipal user, HttpContext http) =>
+    {
+        var status = http.Items[CallerStatus.ItemKey] as CallerStatus;
+        if (status is not { ProfileExists: true })
+            return Results.Problem(ApiExceptionHandler.ProblemFor(StatusCodes.Status404NotFound, "profile_missing", "Not found",
+                "Your profile has not been created yet."));
+        return Results.Ok(new { id = user.Id() });
+    }).WithName("GetMe")
+    .ProducesProblem(StatusCodes.Status403Forbidden)  // user_blocked
+    .ProducesProblem(StatusCodes.Status404NotFound);  // profile_missing
 Handyman.Api.Features.Trades.ListTrades.Map(api);
 Handyman.Api.Features.Areas.ListAreas.Map(api);
 

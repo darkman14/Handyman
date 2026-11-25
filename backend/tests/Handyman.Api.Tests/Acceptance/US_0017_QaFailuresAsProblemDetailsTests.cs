@@ -346,7 +346,7 @@ public class US_0017_QaFailuresAsProblemDetailsTests : IClassFixture<ApiFactory>
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await response.Content.ReadAsStringAsync()).ShouldBeEmpty();
 
-        var valid = _factory.ClientFor(Guid.NewGuid());
+        var valid = _factory.ClientFor(await _factory.SeedUserAsync());
         (await valid.GetAsync("/api/me")).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 

@@ -39,7 +39,7 @@ public class US_0001_ApiRejectsInvalidTokensTests(ApiFactory factory) : IClassFi
     [Fact]
     public async Task Token_that_expires_in_a_few_seconds_is_accepted()
     {
-        var token = TestAuth.Build(UserClaims(), expires: DateTime.UtcNow.AddSeconds(5));
+        var token = TestAuth.Build(UserClaims((await factory.SeedUserAsync()).ToString()), expires: DateTime.UtcNow.AddSeconds(5));
         (await GetMe(token)).ShouldBe(HttpStatusCode.OK);
     }
 
@@ -47,7 +47,7 @@ public class US_0001_ApiRejectsInvalidTokensTests(ApiFactory factory) : IClassFi
     public async Task Token_expired_a_few_seconds_ago_is_accepted_within_the_30_second_clock_skew()
     {
         var expires = DateTime.UtcNow.AddSeconds(-5);
-        var token = TestAuth.Build(UserClaims(), expires: expires, notBefore: expires.AddHours(-1));
+        var token = TestAuth.Build(UserClaims((await factory.SeedUserAsync()).ToString()), expires: expires, notBefore: expires.AddHours(-1));
         (await GetMe(token)).ShouldBe(HttpStatusCode.OK);
     }
 
@@ -137,7 +137,7 @@ public class US_0001_ApiRejectsInvalidTokensTests(ApiFactory factory) : IClassFi
     [Fact]
     public async Task Ac5_valid_token_is_not_401_and_returns_the_sub()
     {
-        var userId = Guid.NewGuid();
+        var userId = await factory.SeedUserAsync();
         var response = await factory.ClientFor(userId).GetAsync("/api/me");
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).ShouldContain(userId.ToString());

@@ -23,7 +23,7 @@ public class HealthAndAuthTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Fact]
     public async Task Protected_endpoint_returns_200_with_test_token()
     {
-        var userId = Guid.NewGuid();
+        var userId = await factory.SeedUserAsync();
         var response = await factory.ClientFor(userId).GetAsync("/api/me");
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadAsStringAsync()).ShouldContain(userId.ToString());

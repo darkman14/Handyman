@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Configuration;
 using Handyman.Api.Data;
+using Handyman.Api.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Handyman.Api.Infrastructure;
@@ -57,6 +58,46 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", TestAuth.TokenFor(userId));
         return client;
+    }
+
+    /// <summary>Inserts an app.users row (the API needs one for every signed-in caller).</summary>
+    public async Task<Guid> SeedUserAsync(Guid? id = null, UserRole role = UserRole.Client, DateTimeOffset? blockedAt = null)
+    {
+        var user = new User
+        {
+            Id = id ?? Guid.NewGuid(),
+            Phone = "+38169" + Random.Shared.NextInt64(1_000_000, 9_999_999),
+            Role = role,
+            Name = "Test User",
+            BlockedAt = blockedAt,
+        };
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        return user.Id;
+    }
+
+    /// <summary>Seeds a user and returns a client signed in as that user.</summary>
+    public async Task<(Guid Id, HttpClient Client)> SignedInUserAsync(UserRole role = UserRole.Client, DateTimeOffset? blockedAt = null)
+    {
+        var id = await SeedUserAsync(role: role, blockedAt: blockedAt);
+        return (id, ClientFor(id));
+    }
+
+    /// <summary>Sets or clears blocked_at the way an admin would.</summary>
+    public async Task SetBlockedAtAsync(Guid userId, DateTimeOffset? blockedAt)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s.SetProperty(u => u.BlockedAt, blockedAt));
+    }
+
+    public async Task DeleteUserAsync(Guid userId)
+    {
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Users.Where(u => u.Id == userId).ExecuteDeleteAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
