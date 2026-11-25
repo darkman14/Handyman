@@ -70,6 +70,8 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> logger, IOp
             "Request rejected", "The request was rejected."),
         BadHttpRequestException => (StatusCodes.Status400BadRequest, ValidationFailed, "Validation failed",
             "The request could not be read. Check the body and parameters."),
+        UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "unauthorized", "Unauthorized",
+            "Sign in again."),
         _ => (StatusCodes.Status500InternalServerError, ServerError, "Server error",
             "Something went wrong. Try again."),
     };

@@ -66,3 +66,10 @@ No new endpoints and no request/response changes. The OpenAPI file does not list
 | AC5 | | n/a |
 
 ## Dev notes
+- Validation lives in `backend/src/Handyman.Api/Auth/SupabaseJwt.cs`.
+- **Clock skew: 30 seconds** (`SupabaseJwt.ClockSkew`, default was 5 minutes). A token that expired up to 30 s ago still passes; older gives `401`.
+- **Algorithms:** HS256 only when `Supabase:JwtSecret` is set; ES256 and RS256 only when keys come from the JWKS. Anything else (HS512, `none`, HS* against a JWKS key) gives `401`.
+- **Identity check** (`OnTokenValidated`): after the signature is valid, the token is refused with `401` unless `sub` is a GUID and `role` is `authenticated`. This rejects the Supabase `anon` key (role `anon`, no `sub`).
+- `ApiExceptionHandler` maps any stray `UnauthorizedAccessException` (e.g. from `CurrentUser.Id()`) to `401` problem details, never `500`.
+- Tests (`US_0001_ApiRejectsInvalidTokensTests`) run the production validation: `ApiFactory` sets `Supabase:JwtSecret` to the test key instead of replacing the validation parameters.
+- Known, not fixed here: JWKS download is synchronous with no timeout (BUG-0013).

@@ -8,6 +8,23 @@ namespace Handyman.Api.Auth;
 
 public static class SupabaseJwt
 {
+    /// <summary>Tolerated difference between our clock and Supabase's when checking <c>exp</c> / <c>nbf</c>.</summary>
+    public static readonly TimeSpan ClockSkew = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// A validly signed token is still refused (401) unless it belongs to a signed-in user: <c>sub</c> must be a GUID
+    /// and <c>role</c> must be "authenticated" (the Supabase anon key has role "anon" and no sub).
+    /// </summary>
+    private static Task RejectUnusableIdentity(TokenValidatedContext context)
+    {
+        var principal = context.Principal;
+        var sub = principal?.FindFirst("sub")?.Value;
+        var role = principal?.FindFirst("role")?.Value;
+        if (!Guid.TryParse(sub, out _) || role != "authenticated")
+            context.Fail("Token is not a signed-in user token.");
+        return Task.CompletedTask;
+    }
+
     public static IServiceCollection AddSupabaseJwt(this IServiceCollection services)
     {
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
@@ -24,15 +41,27 @@ public static class SupabaseJwt
                     ValidateAudience = true,
                     ValidAudience = "authenticated",
                     ValidateLifetime = true,
+                    RequireExpirationTime = true,
+                    ClockSkew = ClockSkew,
                     ValidateIssuerSigningKey = true,
                     NameClaimType = "sub",
                 };
                 if (!string.IsNullOrEmpty(supabase.Value.JwtSecret))
+                {
+                    // Legacy shared-secret projects sign with HS256 only.
+                    options.TokenValidationParameters.ValidAlgorithms = [SecurityAlgorithms.HmacSha256];
                     options.TokenValidationParameters.IssuerSigningKey =
                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(supabase.Value.JwtSecret));
+                }
                 else
+                {
+                    // Asymmetric signing keys from the JWKS; never accept HS* (key confusion) or "none".
+                    options.TokenValidationParameters.ValidAlgorithms =
+                        [SecurityAlgorithms.EcdsaSha256, SecurityAlgorithms.RsaSha256];
                     options.TokenValidationParameters.IssuerSigningKeyResolver =
                         (_, _, kid, _) => jwks.GetKeys($"{url}/auth/v1/.well-known/jwks.json", kid);
+                }
+                options.Events = new JwtBearerEvents { OnTokenValidated = RejectUnusableIdentity };
             });
         services.AddAuthorization();
         return services;
