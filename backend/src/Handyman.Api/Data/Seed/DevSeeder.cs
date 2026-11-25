@@ -30,10 +30,19 @@ public static class DevSeedStartup
     /// <summary>Returns true when the seed ran.</summary>
     public static async Task<bool> RunAsync(IServiceProvider services, IHostEnvironment env, IConfiguration config, CancellationToken ct = default)
     {
-        if (!config.GetValue<bool>("Seed:Enabled"))
+        var log = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DevSeeder));
+
+        // Tolerant parse: an empty or non-boolean value must never crash startup and never seed.
+        var raw = config["Seed:Enabled"]?.Trim();
+        if (!bool.TryParse(raw, out var enabled))
+        {
+            if (!string.IsNullOrEmpty(raw))
+                log.LogWarning("Seed:Enabled has a value that is not a boolean and was ignored; nothing was seeded.");
+            return false;
+        }
+        if (!enabled)
             return false;
 
-        var log = services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DevSeeder));
         if (!IsAllowedEnvironment(env))
         {
             log.LogError("Seed:Enabled is true but the environment is {Environment}; seeding is only allowed in Development and Test. Nothing was seeded.",
