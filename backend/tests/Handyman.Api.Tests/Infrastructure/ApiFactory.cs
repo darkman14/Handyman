@@ -38,21 +38,12 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             ["ConnectionStrings:Default"] = _postgres.GetConnectionString(),
             ["Supabase:Url"] = "http://test.local",
+            // Production validation (issuer, audience, algorithms, skew, sub) runs against the test key.
+            ["Supabase:JwtSecret"] = TestAuth.Secret,
         }));
 
         builder.ConfigureServices(services =>
         {
-            services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
-            {
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidIssuer = TestAuth.Issuer,
-                    ValidAudience = TestAuth.Audience,
-                    IssuerSigningKey = TestAuth.Key,
-                    ValidateIssuerSigningKey = true,
-                    NameClaimType = "sub",
-                };
-            });
             services.AddSingleton<TestErrorCalls>();
             services.AddTransient<Microsoft.AspNetCore.Hosting.IStartupFilter, TestErrorEndpointsStartupFilter>();
             services.RemoveAll<IBlobStorage>();
