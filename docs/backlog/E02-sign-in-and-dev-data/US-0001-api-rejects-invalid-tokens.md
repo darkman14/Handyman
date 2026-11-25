@@ -3,7 +3,7 @@ id: US-0001
 title: API rejects calls without a valid sign-in token
 epic: E02
 feature: F02.1
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -59,11 +59,11 @@ No new endpoints and no request/response changes. The OpenAPI file does not list
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass (`Ac1_api_returns_401_without_authorization_header`, `Every_non_public_endpoint_in_the_openapi_file_returns_401_without_or_with_bad_token`, query-string/cookie/apikey token tests) | n/a |
+| AC2 | pass (`Ac2_expired_token_returns_401`, `Token_expired_longer_ago_than_the_clock_skew_returns_401`, nbf/exp variants in `US_0001_QaExploratoryTests`) | n/a |
+| AC3 | pass (`Ac3_token_from_another_issuer_returns_401`, `Issuer_variants_return_401`) | n/a |
+| AC4 | pass with known issue BUG-0016, low (nil GUID `sub` accepted; pinned by `KNOWN_GAP_BUG_0016_all_zero_guid_sub_is_accepted_but_should_be_401`). Other cases pass: `Ac4_*`, alg none / confusion, role, sub, audience variants | n/a |
+| AC5 | pass (`Ac5_valid_token_is_not_401_and_returns_the_sub`, `Ac5_health_returns_200_without_token`, `Public_paths_return_200_with_every_kind_of_bad_token`) | n/a |
 
 ## Dev notes
 - Validation lives in `backend/src/Handyman.Api/Auth/SupabaseJwt.cs`.
