@@ -36,17 +36,19 @@ public class US_0019_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
         await cmd.ExecuteNonQueryAsync();
     }
 
-    // Today (US-0002 not built) a blocked user's valid token gets the list. When US-0002 lands this must become 403
-    // user_blocked: update this test then; it is not a defect of US-0019.
+    // US-0002: a blocked user's valid token is refused on the public list too, with 403 user_blocked.
     [Fact]
-    public async Task A_blocked_users_valid_token_gets_200_today_because_US_0002_is_not_built()
+    public async Task A_blocked_users_valid_token_gets_403_user_blocked()
     {
         var id = Guid.NewGuid();
         await Exec($"""
             INSERT INTO app.users (id, phone, role, name, rating_sum, rating_count, blocked_at)
             VALUES ('{id}', '+381600019001', 'Client', 'Blocked', 0, 0, now());
             """);
-        (await Get(factory.ClientFor(id))).Select(t => t.Name).ShouldBe(TradeNames);
+        var response = await factory.ClientFor(id).GetAsync("/api/trades");
+        response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        response.Content.Headers.ContentType!.MediaType.ShouldBe("application/problem+json");
+        (await response.Content.ReadAsStringAsync()).ShouldContain("\"code\":\"user_blocked\"");
     }
 
     // Production validates tokens against the Supabase JWKS. Simulate Supabase being down: the real key resolver

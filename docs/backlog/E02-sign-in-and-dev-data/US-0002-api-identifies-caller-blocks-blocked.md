@@ -85,4 +85,5 @@ OpenAPI: `GET /api/me` now declares `403` and `404` problem responses (the only 
 
 ## Dev notes
 - Contract mode: only `Program.cs` changed (`GET /me` now declares 403 and 404 problem responses); the regenerated `docs/api/Handyman.Api.json` diff is real content, not line endings.
-- Behaviour (block middleware, `/me` 404) is not implemented yet.
+- Build mode: `Auth/CallerStatusMiddleware.cs` (after `UseAuthentication()`, `/api` and authenticated callers only) does one PK lookup through `ReadDbContext` per request, no cache; blocked gives 403 `user_blocked` via `ApiExceptionHandler.ProblemFor/WriteAsync`. The result is stored in `HttpContext.Items[CallerStatus.ItemKey]`; `GET /api/me` reads it and answers 404 `profile_missing` when no row exists.
+- Tests: `ApiFactory.SeedUserAsync / SignedInUserAsync / SetBlockedAtAsync / DeleteUserAsync` helpers; any test that expects 200 on `/api/me` must seed the user first.

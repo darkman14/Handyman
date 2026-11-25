@@ -9,8 +9,15 @@ using Shouldly;
 namespace Handyman.Api.Tests.Acceptance;
 
 /// <summary>QA attack tests for US-0001: hand-built JWTs sent over HTTP. KNOWN_GAP tests pin current behavior of filed bugs.</summary>
-public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiFactory>
+public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiFactory>, IAsyncLifetime
 {
+    // Since US-0002 a signed-in caller needs an app.users row, so the default token subject is a seeded user.
+    private Guid _user;
+
+    public async Task InitializeAsync() => _user = await factory.SeedUserAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     private static string B64(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
     private static string B64(object o) => B64(JsonSerializer.SerializeToUtf8Bytes(o));
 
@@ -27,14 +34,14 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
 
     private static Dictionary<string, object?> Hdr(string alg = "HS256") => new() { ["alg"] = alg, ["typ"] = "JWT" };
 
-    private static Dictionary<string, object?> Pay(object? sub = null, object? role = null, bool withSub = true, bool withRole = true, bool withExp = true) =>
+    private Dictionary<string, object?> Pay(object? sub = null, object? role = null, bool withSub = true, bool withRole = true, bool withExp = true) =>
         new Dictionary<string, object?>
         {
             ["iss"] = TestAuth.Issuer,
             ["aud"] = "authenticated",
         }.Also(d =>
         {
-            if (withSub) d["sub"] = sub ?? Guid.NewGuid().ToString();
+            if (withSub) d["sub"] = sub ?? _user.ToString();
             if (withRole) d["role"] = role ?? "authenticated";
             if (withExp) d["exp"] = Now(3600);
         });
@@ -325,7 +332,7 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
     [Fact]
     public async Task Uppercase_guid_sub_is_accepted_and_resolves_to_the_same_user()
     {
-        var id = Guid.NewGuid();
+        var id = _user;
         var res = await Send("/api/me", Raw(Hdr(), Pay(sub: id.ToString().ToUpperInvariant())));
         res.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await res.Content.ReadAsStringAsync()).ToLowerInvariant().ShouldContain(id.ToString());
@@ -337,7 +344,7 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
     [InlineData("{0:N}")]     // no hyphens
     public async Task Alternative_guid_spellings_of_sub_resolve_to_one_canonical_user_id_or_are_refused(string format)
     {
-        var id = Guid.NewGuid();
+        var id = _user;
         var sub = format switch { "{0}" => "{" + id + "}", "({0})" => "(" + id + ")", _ => id.ToString("N") };
         var res = await Send("/api/me", Raw(Hdr(), Pay(sub: sub)));
         if (res.StatusCode == HttpStatusCode.OK)
@@ -349,7 +356,7 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
     [Fact]
     public async Task Sub_with_surrounding_whitespace_returns_401_or_the_canonical_id()
     {
-        var id = Guid.NewGuid();
+        var id = _user;
         var res = await Send("/api/me", Raw(Hdr(), Pay(sub: $" {id} ")));
         res.StatusCode.ShouldBeOneOf(HttpStatusCode.Unauthorized, HttpStatusCode.OK);
     }
@@ -357,7 +364,8 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
     [Fact]
     public async Task KNOWN_GAP_BUG_0016_all_zero_guid_sub_is_accepted_but_should_be_401() =>
         // Desired: 401 (the nil GUID is not a user id). Pins current behavior so the suite stays green; flip to Unauthorized when fixed.
-        (await Me(Raw(Hdr(), Pay(sub: Guid.Empty.ToString())))).ShouldBe(HttpStatusCode.OK);
+        // Since US-0002 the token is still accepted but no app.users row exists for the nil id, so /me answers 404 profile_missing.
+        (await Me(Raw(Hdr(), Pay(sub: Guid.Empty.ToString())))).ShouldBe(HttpStatusCode.NotFound);
 
     [Fact]
     public async Task Sub_as_number_null_array_or_object_returns_401()
@@ -370,7 +378,7 @@ public class US_0001_QaExploratoryTests(ApiFactory factory) : IClassFixture<ApiF
     public async Task Duplicate_sub_claims_cannot_smuggle_another_identity()
     {
         // JSON with duplicate "sub" keys: parser keeps one; whichever it is, it must be a GUID that /me echoes consistently.
-        var a = Guid.NewGuid();
+        var a = _user;
         var header = B64(Hdr());
         var payload = $"{{\"iss\":\"{TestAuth.Issuer}\",\"aud\":\"authenticated\",\"role\":\"authenticated\",\"sub\":\"not-a-guid\",\"sub\":\"{a}\",\"exp\":{Now(3600)}}}";
         var input = header + "." + B64(Encoding.UTF8.GetBytes(payload));
