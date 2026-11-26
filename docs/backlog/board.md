@@ -9,7 +9,7 @@
 | US-0005 | Seeded workers have trades, coverage and approval state | E02 | done |
 | US-0006 | Sample jobs are seeded once | E02 | done |
 | US-0007 | Request a sign-in code by phone | E02 | done |
-| US-0008 | Sign in with the SMS code | E02 | in-progress |
+| US-0008 | Sign in with the SMS code | E02 | done |
 | US-0009 | Stay signed in and sign out | E02 | ready |
 | US-0010 | App calls the API as the signed-in user | E02 | ready |
 | US-0011 | Business tables exist in a locked-down app schema | E01 | done |
@@ -41,8 +41,8 @@
 | BUG-0017 | Empty `Seed:Enabled` value crashes API startup (US-0004 AC2, medium) | E02 | fixed |
 | BUG-0018 | Concurrent hosts can duplicate the sample jobs (US-0006 AC5, low) | E02 | open |
 | BUG-0019 | Real local Supabase tokens get 401: issuer is 127.0.0.1, API expects the configured Url (US-0003 AC4, medium) | E02 | fixed |
-| BUG-0020 | Pressing Enter in the phone field does not submit the sign-in form (US-0007 AC2, low) | E02 | open |
+| BUG-0020 | Pressing Enter in the phone field does not submit the sign-in form (US-0007 AC2, low) | E02 | fixed |
 | BUG-0021 | Send code loading state is not exposed as aria-busy (US-0007 AC2, low) | E02 | open |
 | BUG-0022 | Phone validation message is not announced and not tied to the field (US-0007 AC3, medium) | E02 | fixed |
 | BUG-0023 | Stack header shows raw route names "index" and "code" (US-0007 AC1, low) | E02 | open |
-| BUG-0024 | /code without a phone shows an empty number instead of redirecting (US-0007 AC2, low) | E02 | open |
+| BUG-0024 | /code without a phone shows an empty number instead of redirecting (US-0007 AC2, low) | E02 | fixed |
