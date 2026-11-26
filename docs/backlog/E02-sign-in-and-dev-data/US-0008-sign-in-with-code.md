@@ -3,7 +3,7 @@ id: US-0008
 title: Sign in with the SMS code
 epic: E02
 feature: F02.3
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -41,7 +41,7 @@ As a client or worker who just received an SMS code, I want to type it in and be
 - none
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change (Supabase Auth only).
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |

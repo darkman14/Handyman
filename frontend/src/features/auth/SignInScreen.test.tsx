@@ -4,9 +4,10 @@ import { supabase } from '@/lib/supabase';
 import { SignInScreen } from './SignInScreen';
 
 const mockPush = jest.fn();
+let mockParams: { phone?: string } = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, back: jest.fn() }),
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockParams,
 }));
 
 const signIn = supabase.auth.signInWithOtp as jest.Mock;
@@ -15,6 +16,7 @@ const send = () => screen.getByRole('button', { name: en.auth.sendCode });
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockParams = {};
   signIn.mockResolvedValue({ data: {}, error: null });
 });
 
@@ -94,5 +96,19 @@ describe('SignInScreen', () => {
     expect(await screen.findByText("Couldn't send the code. Try again.")).toBeTruthy();
     expect(mockPush).not.toHaveBeenCalled();
     expect(send()).toBeEnabled();
+  });
+
+  it('BUG-0020 submits when Enter is pressed in the field', async () => {
+    await render(<SignInScreen />);
+    await fireEvent.changeText(field(), '0600000201');
+    await fireEvent(field(), 'submitEditing');
+    await waitFor(() => expect(mockPush).toHaveBeenCalledTimes(1));
+    expect(signIn).toHaveBeenCalledWith({ phone: '+381600000201' });
+  });
+
+  it('US-0008 AC5 prefills the number passed back from the code screen', async () => {
+    mockParams = { phone: '+381600000201' };
+    await render(<SignInScreen />);
+    expect(field().props.value).toBe('+381600000201');
   });
 });

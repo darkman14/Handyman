@@ -9,7 +9,7 @@
 | US-0005 | Seeded workers have trades, coverage and approval state | E02 | done |
 | US-0006 | Sample jobs are seeded once | E02 | done |
 | US-0007 | Request a sign-in code by phone | E02 | done |
-| US-0008 | Sign in with the SMS code | E02 | ready |
+| US-0008 | Sign in with the SMS code | E02 | in-progress |
 | US-0009 | Stay signed in and sign out | E02 | ready |
 | US-0010 | App calls the API as the signed-in user | E02 | ready |
 | US-0011 | Business tables exist in a locked-down app schema | E01 | done |
