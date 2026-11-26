@@ -3,7 +3,7 @@ id: US-0007
 title: Request a sign-in code by phone
 epic: E02
 feature: F02.3
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -52,9 +52,9 @@ No API change (Supabase Auth only).
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | n/a | |
-| AC2 | n/a | |
-| AC3 | n/a | |
-| AC4 | n/a | |
+| AC1 | n/a | pass (with BUG-0023 low): `AC1 signed-out visitor sees the sign-in screen...` |
+| AC2 | n/a | pass (BUG-0020, 0021, 0024 low): `AC2 ...` (4 number forms, never-seen number, real local Supabase, loading + double click) |
+| AC3 | n/a | pass (BUG-0022 medium, a11y: fixed and re-verified): 9 `AC3 ...` tests |
+| AC4 | n/a | pass: `AC4 rate limit...`, `AC4 a server error...`, `AC4 a network failure...` |
 
 ## Dev notes
