@@ -3,7 +3,7 @@ id: US-0005
 title: Seeded workers have trades, coverage and approval state
 epic: E02
 feature: F02.2
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -42,7 +42,7 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 - 2026-11-10: seeded coverage is fixed at first seed; the seeder never changes existing worker data, so neighborhoods added to the area tree later are not added on restart (now in AC4).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -53,3 +53,5 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 | AC4 | | n/a |
 
 ## Dev notes
+- Seeded by `SeedDevWorkersStep` (data in `DevWorkers.cs`), registered after `SeedDevUsersStep` in Program.cs (order = registration order; the step throws if a worker user is missing).
+- A worker with an existing profile is skipped entirely, so approvals and coverage are fixed at first seed.
