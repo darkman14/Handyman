@@ -6,7 +6,7 @@
 | US-0002 | API identifies the caller and refuses blocked users | E02 | done |
 | US-0003 | Seeded users can sign in locally | E02 | in-qa |
 | US-0004 | Seeder runs only where it is allowed | E02 | done |
-| US-0005 | Seeded workers have trades, coverage and approval state | E02 | in-progress |
+| US-0005 | Seeded workers have trades, coverage and approval state | E02 | done |
 | US-0006 | Sample jobs are seeded once | E02 | ready |
 | US-0007 | Request a sign-in code by phone | E02 | ready |
 | US-0008 | Sign in with the SMS code | E02 | ready |
