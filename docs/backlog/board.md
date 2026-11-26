@@ -7,7 +7,7 @@
 | US-0003 | Seeded users can sign in locally | E02 | done |
 | US-0004 | Seeder runs only where it is allowed | E02 | done |
 | US-0005 | Seeded workers have trades, coverage and approval state | E02 | done |
-| US-0006 | Sample jobs are seeded once | E02 | in-progress |
+| US-0006 | Sample jobs are seeded once | E02 | done |
 | US-0007 | Request a sign-in code by phone | E02 | ready |
 | US-0008 | Sign in with the SMS code | E02 | ready |
 | US-0009 | Stay signed in and sign out | E02 | ready |
@@ -39,4 +39,5 @@
 | BUG-0015 | Frontend Jest: one test fails on a cold first run, passes on rerun (low) | - | open |
 | BUG-0016 | All-zero GUID `sub` is accepted as a signed-in user (US-0001 AC4, low) | E02 | open |
 | BUG-0017 | Empty `Seed:Enabled` value crashes API startup (US-0004 AC2, medium) | E02 | fixed |
+| BUG-0018 | Concurrent hosts can duplicate the sample jobs (US-0006 AC5, low) | E02 | open |
 | BUG-0019 | Real local Supabase tokens get 401: issuer is 127.0.0.1, API expects the configured Url (US-0003 AC4, medium) | E02 | fixed |

@@ -3,7 +3,7 @@ id: US-0006
 title: Sample jobs are seeded once
 epic: E02
 feature: F02.2
-status: in-progress
+status: done
 ---
 
 ## Story
@@ -52,11 +52,11 @@ No API change.
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
-| AC5 | | n/a |
+| AC1 | pass: `AC1_ana_has_open_dishwasher_job_with_two_active_bids`, `Bidders_cover_the_job_neighborhood_and_trade`, `Bids_have_positive_money_valid_utc_windows_and_future_windows_on_open_jobs`, `Open_job_with_two_bids_can_be_hired_through_the_domain_and_the_other_bid_is_rejected` | n/a |
+| AC2 | pass: `AC2_milan_has_open_electrical_job_without_bids` | n/a |
+| AC3 | pass: `AC3_ivana_has_done_job_hired_to_jelena_without_ratings`, `Seeded_done_job_obeys_the_domain_model_and_can_be_rated_and_closed` | n/a |
+| AC4 | pass: `AC4_every_job_has_all_address_fields_and_numbers_increase`, `Job_numbers_increase_in_order_ana_milan_ivana_across_repeated_reseeds_and_a_dirty_sequence` | n/a |
+| AC5 | pass (one low gap, BUG-0018: concurrent hosts can duplicate): `AC5_restart_with_jobs_present_changes_nothing_and_deleting_all_brings_three_back`, `Restarting_three_times_after_tester_edits_changes_nothing`, `A_tester_created_job_alone_stops_the_sample_jobs`, `KNOWN_GAP_two_hosts_seeding_at_once_may_duplicate_the_sample_set_but_never_partially` | n/a |
 
 ## Dev notes
 - Implemented as `SeedDevSampleJobsStep` (Data/Seed/), registered in Program.cs after the users and workers steps. It does nothing when any job exists; otherwise it saves the 3 jobs and 4 bids in one SaveChanges.
