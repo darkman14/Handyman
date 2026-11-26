@@ -23,6 +23,8 @@ public class US_0004_SeederRunsOnlyWhereAllowedTests
             Interlocked.Increment(ref Calls);
             return Task.FromResult(Guid.NewGuid());
         }
+
+        public Task<Guid?> FindUserIdByPhoneAsync(string phone, CancellationToken ct) => Task.FromResult<Guid?>(null);
     }
 
     private sealed class CapturingSink : ILogEventSink
@@ -75,6 +77,7 @@ public class US_0004_SeederRunsOnlyWhereAllowedTests
                 services.AddSingleton(Admin);
                 services.AddSingleton<ISupabaseAdminClient>(Admin);
                 services.AddSingleton(Probe);
+                services.RemoveAll<IDevSeedStep>(); // the real steps are covered by US_0003 tests
                 services.AddScoped<IDevSeedStep, ProbeStep>();
             });
         }

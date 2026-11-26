@@ -40,6 +40,7 @@ builder.Services.AddHttpClient<IBlobStorage, SupabaseStorage>();
 builder.Services.AddSupabaseJwt();
 builder.Services.AddHttpClient<ISupabaseAdminClient, SupabaseAdminClient>();
 builder.Services.AddScoped<DevSeeder>();
+builder.Services.AddScoped<IDevSeedStep, SeedDevUsersStep>();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();

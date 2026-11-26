@@ -3,7 +3,7 @@ id: US-0003
 title: Seeded users can sign in locally
 epic: E02
 feature: F02.2
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -52,7 +52,7 @@ As a developer or QA engineer, I want the 10 seeded users to exist in local Supa
 - 2026-11-10: Mila's store referral is only a reminder for testing the E09 referral flow by hand; nothing is seeded for it and the data model is unchanged.
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -64,3 +64,10 @@ As a developer or QA engineer, I want the 10 seeded users to exist in local Supa
 | AC5 | | n/a |
 
 ## Dev notes
+- `Data/Seed/DevUsers.cs` holds the 10 users; `Data/Seed/SeedDevUsersStep.cs` is the `IDevSeedStep`. Phones are normalized to `+<digits>` everywhere (app.users stores `+381...`; Supabase returns digits only, compared by digits).
+- `ISupabaseAdminClient` gained `FindUserIdByPhoneAsync` (pages through `GET /auth/v1/admin/users`, 200 per page). Create sends `phone_confirm: true`.
+- Supabase down: all auth users are resolved before anything is written to `app.users`; an `HttpRequestException` is logged as an error and rethrown as `InvalidOperationException`, so API startup fails loudly and `app.users` stays empty. Auth users created before the outage are reused on the next start.
+- Mismatch (app.users row for a seeded phone has another id than the auth user, or the auth id is used by another row): the seeder logs an error and throws, startup fails. It never re-keys or adds a second row. Recovery: reset `app.users` and Supabase Auth together.
+- Worker trades/coverage/approval are not seeded here (US-0005).
+- The US_0004 tests replace all `IDevSeedStep` registrations with their probe step, so they do not run the real users step.
+- AC5 test parses `supabase/config.toml`; it already contained all 10 numbers, no change needed.

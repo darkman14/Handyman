@@ -67,6 +67,7 @@ public class US_0004_QaExploratoryTests
             {
                 s.AddSingleton<ILogEventSink>(Logs);
                 s.AddSingleton(Count);
+                s.RemoveAll<IDevSeedStep>(); // the real steps are covered by US_0003 tests
                 s.AddScoped<IDevSeedStep, CountingStep>();
                 extra?.Invoke(s);
             });
