@@ -16,6 +16,23 @@ describe('Button', () => {
   });
 });
 
+describe('Button loading', () => {
+  it('is busy and does not fire while loading', async () => {
+    const onPress = jest.fn();
+    await render(<Button title="Send code" onPress={onPress} loading />);
+    await fireEvent.press(screen.getByLabelText('Send code'));
+    expect(onPress).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Send code' })).toBeBusy();
+  });
+});
+
+describe('Text tone', () => {
+  it('renders danger text as an alert', async () => {
+    await render(<Text tone="danger" role="alert">Oops</Text>);
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+});
+
 describe('Screen', () => {
   it('renders its children', async () => {
     await render(<Screen><Text>inside</Text></Screen>);

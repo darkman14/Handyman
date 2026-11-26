@@ -3,7 +3,7 @@ id: US-0007
 title: Request a sign-in code by phone
 epic: E02
 feature: F02.3
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -47,7 +47,7 @@ As a client with a broken dishwasher (or a worker checking for jobs), I want to 
 - 2026-11-10: anyone can sign up with a new number (Supabase `enable_signup = true`); onboarding follows in E03 (now in AC2).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change (Supabase Auth only).
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
