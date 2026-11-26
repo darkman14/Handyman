@@ -16,6 +16,23 @@ describe('Button', () => {
   });
 });
 
+describe('Button loading', () => {
+  it('is busy and does not fire while loading', async () => {
+    const onPress = jest.fn();
+    await render(<Button title="Send code" onPress={onPress} loading />);
+    await fireEvent.press(screen.getByLabelText('Send code'));
+    expect(onPress).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Send code' })).toBeBusy();
+  });
+});
+
+describe('Text tone', () => {
+  it('renders danger text as an alert', async () => {
+    await render(<Text tone="danger" role="alert">Oops</Text>);
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+});
+
 describe('Screen', () => {
   it('renders its children', async () => {
     await render(<Screen><Text>inside</Text></Screen>);
@@ -37,6 +54,19 @@ describe('TextField', () => {
     await fireEvent.changeText(screen.getByLabelText('Phone'), '123');
     expect(onChangeText).toHaveBeenCalledWith('123');
     expect(screen.getByText('Required')).toBeTruthy();
+  });
+  it('announces the error as an alert and marks the field invalid', async () => {
+    await render(<TextField label="Phone" error="Required" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Required');
+    expect(screen.getByLabelText('Phone').props['aria-invalid']).toBe(true);
+    expect(screen.getByLabelText('Phone').props['aria-describedby']).toBe(
+      screen.getByRole('alert').props.nativeID,
+    );
+  });
+  it('has no alert or invalid flag without an error', async () => {
+    await render(<TextField label="Phone" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByLabelText('Phone').props['aria-invalid']).toBeUndefined();
   });
 });
 

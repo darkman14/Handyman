@@ -1,9 +1,11 @@
+import { useId } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
 import { useTheme } from './useTheme';
 
 type Props = Omit<TextInputProps, 'style'> & { label: string; error?: string };
 
 export function TextField({ label, error, ...rest }: Props) {
+  const errorId = `${useId()}-error`;
   const { colors, spacing, radius, type, layout } = useTheme();
   return (
     <View style={{ gap: spacing.xs }}>
@@ -12,6 +14,8 @@ export function TextField({ label, error, ...rest }: Props) {
         accessibilityLabel={label}
         placeholderTextColor={colors.textMuted}
         {...rest}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? errorId : undefined}
         style={[
           type.body,
           {
@@ -25,7 +29,11 @@ export function TextField({ label, error, ...rest }: Props) {
           },
         ]}
       />
-      {error ? <Text style={[type.caption, { color: colors.danger }]}>{error}</Text> : null}
+      {error ? (
+        <Text nativeID={errorId} role="alert" style={[type.caption, { color: colors.danger }]}>
+          {error}
+        </Text>
+      ) : null}
     </View>
   );
 }
