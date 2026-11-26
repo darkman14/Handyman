@@ -3,7 +3,7 @@ id: US-0004
 title: Seeder runs only where it is allowed
 epic: E02
 feature: F02.2
-status: ready
+status: done
 ---
 
 ## Story
@@ -41,14 +41,18 @@ As the product owner, I want the development seeder to be impossible to run in P
 - 2026-11-10: the seeder runs only in Development and Test; every other environment (Production, `Staging`, unknown names) is refused like Production (now in AC1).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
+| AC1 | pass: `US_0004_SeederRunsOnlyWhereAllowedTests.AC1_*`; QA: `Environment_name_variants_that_are_not_exactly_development_or_test_are_refused`, `Refused_seed_still_serves_health_logs_no_secrets_and_applies_no_migration` | n/a |
+| AC2 | pass for `false`/missing (`AC2_*`, `Seed_enabled_false`); fail for empty value: BUG-0017 (`KNOWN_GAP_BUG_0017_*`) | n/a |
+| AC3 | pass: `AC3_empty_database_is_migrated_first_and_then_seeded`; QA: `Environment_name_in_any_casing_of_development_or_test_seeds`, `Running_the_seeder_twice_*`, `Failing_seed_step_fails_startup_loudly` | n/a |
+| AC4 | pass: real `dotnet build backend` with `Seed__Enabled=true` and a bogus DB/Supabase config succeeded in about 4 s, regenerated `docs/api/Handyman.Api.json` (no content diff); dev test `AC4_*` is only a source check | n/a |
 
 ## Dev notes
+- Startup logic: `Data/Seed/DevSeeder.cs` (`DevSeedStartup.RunAsync`, called from `Program.cs`, skipped when the entry assembly is `GetDocument.Insider`). Allowed: environment name equals Development or Test (any casing) and `Seed:Enabled` true; then migrate, then run every registered `IDevSeedStep`. Other environments log an error and seed nothing (no migration either, unless `Database:MigrateOnStartup` is set).
+- US-0003/0005/0006: add seed steps as scoped `IDevSeedStep`; use `ISupabaseAdminClient` (faked in tests).
+- `ApiFactory` now forces `Seed:Enabled=false` because a developer's `appsettings.Local.json` enables it.
+- Serilog now uses `preserveStaticLogger: true` (one logger per host) so tests can capture logs through a DI `ILogEventSink`.

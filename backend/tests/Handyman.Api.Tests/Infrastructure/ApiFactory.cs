@@ -41,6 +41,8 @@ public class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             ["Supabase:Url"] = "http://test.local",
             // Production validation (issuer, audience, algorithms, skew, sub) runs against the test key.
             ["Supabase:JwtSecret"] = TestAuth.Secret,
+            // A developer's appsettings.Local.json has Seed:Enabled=true; the seeder must never run in the general test host.
+            ["Seed:Enabled"] = "false",
         }));
 
         builder.ConfigureServices(services =>

@@ -5,7 +5,7 @@
 | US-0001 | API rejects calls without a valid sign-in token | E02 | done |
 | US-0002 | API identifies the caller and refuses blocked users | E02 | done |
 | US-0003 | Seeded users can sign in locally | E02 | ready |
-| US-0004 | Seeder runs only where it is allowed | E02 | ready |
+| US-0004 | Seeder runs only where it is allowed | E02 | done |
 | US-0005 | Seeded workers have trades, coverage and approval state | E02 | ready |
 | US-0006 | Sample jobs are seeded once | E02 | ready |
 | US-0007 | Request a sign-in code by phone | E02 | ready |
@@ -38,3 +38,4 @@
 | BUG-0014 | GET /areas accepts +1, 0001, -0 as ids; padded id is 400 but all-blank is top level (US-0020 AC5, low) | E01 | open |
 | BUG-0015 | Frontend Jest: one test fails on a cold first run, passes on rerun (low) | - | open |
 | BUG-0016 | All-zero GUID `sub` is accepted as a signed-in user (US-0001 AC4, low) | E02 | open |
+| BUG-0017 | Empty `Seed:Enabled` value crashes API startup (US-0004 AC2, medium) | E02 | fixed |
