@@ -3,7 +3,7 @@ id: US-0008
 title: Sign in with the SMS code
 epic: E02
 feature: F02.3
-status: ready
+status: done
 ---
 
 ## Story
@@ -41,15 +41,17 @@ As a client or worker who just received an SMS code, I want to type it in and be
 - none
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change (Supabase Auth only).
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | n/a | |
-| AC2 | n/a | |
-| AC3 | n/a | |
-| AC4 | n/a | |
-| AC5 | n/a | |
+| AC1 | n/a | pass: `AC1 real local Supabase signs Ana (client) / Jelena (worker) / Admin in with 123456 and shows home`, `AC1 full flow from sign-in screen with real Supabase reaches home` |
+| AC2 | n/a | pass: `AC2 a real wrong code 000000 ...`, `AC2 mocked otp_expired 403 / invalid 400 / 422 ...`, `AC2 retry after a mocked failure succeeds ...`, `AC2 typing again clears the error message`, verify rate limit / server / network error tests |
+| AC3 | n/a | pass: `AC3 fewer than 6 digits keeps Sign in disabled and sends no request`, `AC3 letters and symbols are ignored`, `AC3 pasted "123 456" is accepted as 123456`, `AC3 more than 6 digits are capped at 6` |
+| AC4 | n/a | pass: `AC4 Send a new code requests an OTP ... visible 60 s countdown` (page.clock), `AC4 clicking the disabled resend link ...`, `AC4 resend rate limit ...`, `AC4 resend server error ...`, `AC4 a network failure on resend ...`, `AC4 the countdown does not block signing in` |
+| AC5 | n/a | pass: `AC5 Change number returns to sign-in with the number prefilled`, `AC5 after Change number a different number can be used end to end` |
+
+Also covered: double click sends one verify, Enter submits, /code without or with invalid phone and /home without session redirect to sign-in, reload on /home and /code, 360 px and 1920 px, 200% text size, no console errors, no token or code in the URL. No new bugs. Observations: the number is in the `/code?phone=` URL; resend and Sign in buttons lose keyboard focus when they become disabled; loading state aria-busy on the buttons is still BUG-0021; raw route names in headers still BUG-0023.
 
 ## Dev notes

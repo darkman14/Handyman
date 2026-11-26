@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { en } from '@/i18n/en';
@@ -14,10 +14,12 @@ type Values = z.infer<typeof schema>;
 
 export function SignInScreen() {
   const router = useRouter();
+  const { phone: param } = useLocalSearchParams<{ phone?: string }>();
+  const initialPhone = (typeof param === 'string' && normalizeSerbianPhone(param)) || SERBIA_PREFIX;
   const { requestCode, loading, error } = useRequestCode();
   const { control, handleSubmit } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { phone: SERBIA_PREFIX },
+    defaultValues: { phone: initialPhone },
   });
 
   const onSubmit = handleSubmit(async ({ phone }) => {
@@ -45,6 +47,8 @@ export function SignInScreen() {
               keyboardType="phone-pad"
               textContentType="telephoneNumber"
               autoComplete="tel"
+              returnKeyType="go"
+              onSubmitEditing={() => void onSubmit()}
               editable={!loading}
               error={fieldState.error?.message}
             />

@@ -23,3 +23,10 @@ export function normalizeSerbianPhone(input: string): string | null {
   if (national.startsWith('0')) national = national.slice(1);
   return NATIONAL_MOBILE.test(national) ? `${SERBIA_PREFIX}${national}` : null;
 }
+
+/** Formats +381600000201 as "+381 60 000 0201". Returns the input unchanged when it does not look like one. */
+export function formatPhone(input: string): string {
+  const value = input.startsWith('+') ? input : `+${input}`;
+  const m = /^\+381(\d{2})(\d{3})(\d{3,4})$/.exec(value);
+  return m ? `${SERBIA_PREFIX} ${m[1]} ${m[2]} ${m[3]}` : value;
+}

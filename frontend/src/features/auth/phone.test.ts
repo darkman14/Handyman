@@ -1,4 +1,4 @@
-import { normalizeSerbianPhone as n } from './phone';
+import { formatPhone, normalizeSerbianPhone as n } from './phone';
 
 const SEEDED = '+381600000201';
 
@@ -29,5 +29,16 @@ describe('normalizeSerbianPhone', () => {
     ['+381 11 234 5678'],
   ])('rejects %p', (input) => {
     expect(n(input)).toBeNull();
+  });
+});
+
+describe('formatPhone', () => {
+  it.each([
+    ['+381600000201', '+381 60 000 0201'],
+    ['381600000201', '+381 60 000 0201'],
+    ['+38160123456', '+381 60 123 456'],
+    ['garbage', '+garbage'],
+  ])('formats %s as %s', (input, expected) => {
+    expect(formatPhone(input)).toBe(expected);
   });
 });

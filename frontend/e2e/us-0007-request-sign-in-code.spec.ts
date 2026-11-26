@@ -50,7 +50,7 @@ test.describe('US-0007 request sign-in code', () => {
       await page.goto('/');
       await fill(page, input);
       await send(page).click();
-      await expect(page.getByText('+381600000201')).toBeVisible();
+      await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
       await expect(page).toHaveURL(/\/code/);
       expect(bodies).toHaveLength(1);
       expect(JSON.parse(bodies[0]).phone).toBe('+381600000201');
@@ -63,7 +63,7 @@ test.describe('US-0007 request sign-in code', () => {
     await page.goto('/');
     await fill(page, '+381600009999');
     await send(page).click();
-    await expect(page.getByText('+381600009999')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 9999')).toBeVisible();
     expect(JSON.parse(bodies[0]).phone).toBe('+381600009999');
   });
 
@@ -71,7 +71,7 @@ test.describe('US-0007 request sign-in code', () => {
     await page.goto('/');
     await fill(page, '060 000 0201');
     await send(page).click();
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
     await expect(page).toHaveURL(/\/code/);
   });
 
@@ -83,7 +83,7 @@ test.describe('US-0007 request sign-in code', () => {
     await send(page).dblclick();
     await expect(send(page)).toBeDisabled();
     await expect(page.getByRole('textbox', { name: 'Phone number' })).toHaveAttribute('readonly', '');
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
     expect(bodies).toHaveLength(1);
   });
 
@@ -119,7 +119,7 @@ test.describe('US-0007 request sign-in code', () => {
     await page.unroute(OTP);
     await mockOtp(page, 200, {});
     await send(page).click();
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
   });
 
   test('AC4 a server error shows the generic message and a second failure still allows retry', async ({ page }) => {
@@ -142,14 +142,14 @@ test.describe('US-0007 request sign-in code', () => {
     await expect(page).not.toHaveURL(/\/code/);
   });
 
-  test('KNOWN_GAP BUG-0020 pressing Enter in the field does not submit (tab to Send code instead)', async ({ page }) => {
+  test('AC2 pressing Enter in the phone field submits the form (BUG-0020 fixed)', async ({ page }) => {
+    await mockOtp(page, 200, {});
     const bodies = trackOtp(page);
     await page.goto('/');
     await page.getByRole('textbox', { name: 'Phone number' }).fill('0600000201');
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(800);
-    await expect(page).not.toHaveURL(/\/code/);
-    expect(bodies).toHaveLength(0);
+    await expect(page).toHaveURL(/\/code/);
+    expect(bodies).toHaveLength(1);
   });
 
   test('keyboard: Tab reaches Send code and Enter on the button submits', async ({ page }) => {
@@ -159,7 +159,7 @@ test.describe('US-0007 request sign-in code', () => {
     await page.keyboard.press('Tab');
     await expect(send(page)).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
   });
 
   test('KNOWN_GAP BUG-0021 loading state is not exposed as aria-busy', async ({ page }) => {
@@ -222,9 +222,9 @@ test.describe('US-0007 request sign-in code', () => {
     await page.goto('/');
     await fill(page, '0600000201');
     await send(page).click();
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
     await page.reload();
-    await expect(page.getByText('+381600000201')).toBeVisible();
+    await expect(page.getByText('Sent to +381 60 000 0201')).toBeVisible();
     await page.goBack();
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Phone number' })).toHaveValue('+381');
@@ -237,17 +237,17 @@ test.describe('US-0007 request sign-in code', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 
-  test('direct visit to /code without a phone does not crash', async ({ page }) => {
+  test('direct visit to /code without a phone does not crash and shows sign-in', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto('/code');
-    await expect(page.getByRole('heading', { name: 'Enter your code' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     expect(errors).toEqual([]);
   });
 
-  test('KNOWN_GAP BUG-0024 /code without a phone shows an empty number instead of sending the user back', async ({ page }) => {
+  test('AC2 /code without a phone sends the user back to sign-in (BUG-0024 fixed)', async ({ page }) => {
     await page.goto('/code');
-    await expect(page.getByText('We sent a code to')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Sign in' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Enter the code' })).toHaveCount(0);
   });
 });
