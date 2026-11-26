@@ -37,7 +37,9 @@ public static class SupabaseJwt
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = $"{url}/auth/v1",
+                    ValidIssuer = string.IsNullOrWhiteSpace(supabase.Value.Issuer)
+                        ? $"{url}/auth/v1"
+                        : supabase.Value.Issuer.Trim(),
                     ValidateAudience = true,
                     ValidAudience = "authenticated",
                     ValidateLifetime = true,
