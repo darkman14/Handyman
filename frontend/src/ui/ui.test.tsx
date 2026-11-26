@@ -55,6 +55,19 @@ describe('TextField', () => {
     expect(onChangeText).toHaveBeenCalledWith('123');
     expect(screen.getByText('Required')).toBeTruthy();
   });
+  it('announces the error as an alert and marks the field invalid', async () => {
+    await render(<TextField label="Phone" error="Required" />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Required');
+    expect(screen.getByLabelText('Phone').props['aria-invalid']).toBe(true);
+    expect(screen.getByLabelText('Phone').props['aria-describedby']).toBe(
+      screen.getByRole('alert').props.nativeID,
+    );
+  });
+  it('has no alert or invalid flag without an error', async () => {
+    await render(<TextField label="Phone" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByLabelText('Phone').props['aria-invalid']).toBeUndefined();
+  });
 });
 
 describe('Badge', () => {

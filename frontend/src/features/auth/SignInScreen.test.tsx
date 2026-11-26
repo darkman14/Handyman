@@ -63,6 +63,9 @@ describe('SignInScreen', () => {
       await fireEvent.changeText(field(), input);
       await fireEvent.press(send());
       expect(await screen.findByText(en.auth.invalidPhone)).toBeTruthy();
+      expect(screen.getByRole('alert')).toHaveTextContent(en.auth.invalidPhone);
+      expect(field().props['aria-invalid']).toBe(true);
+      expect(field().props['aria-describedby']).toBe(screen.getByRole('alert').props.nativeID);
       expect(signIn).not.toHaveBeenCalled();
       expect(mockPush).not.toHaveBeenCalled();
     },
