@@ -3,7 +3,7 @@ id: US-0009
 title: Stay signed in and sign out
 epic: E02
 feature: F02.3
-status: ready
+status: done
 ---
 
 ## Story
@@ -48,10 +48,10 @@ As a busy electrician, I want the app to keep me signed in between uses and only
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | n/a | |
-| AC2 | n/a | |
-| AC3 | n/a | |
-| AC4 | n/a | |
-| AC5 | n/a | |
+| AC1 | n/a | pass: `AC1 reload keeps the session and lands on home`, `AC1 a new tab...`, `AC1 no sign-in screen flashes while the session is restored` |
+| AC2 | n/a | pass: `AC2 signed out: direct URL to /home goes to sign-in, then lands on /home after sign-in`, 7 open-redirect tests (`//evil.com`, `https://evil.com`, `javascript:`, backslash variants, `/code`, `/`). Only /home is protected today, so the redirect param is not set for it. See BUG-0025 (low) |
+| AC3 | n/a | pass: `AC3 signed in: opening / or /code goes to home`, `AC3 ... back ... never shows the sign-in screen` |
+| AC4 | n/a | pass: `AC4 sign out: cancel keeps the session, confirm removes it and reload stays signed out`, `AC4 ... Escape cancels and focus is inside the dialog`, `AC4 two tabs`, `AC4 ... phone width`, `AC4 ... back button` |
+| AC5 | n/a | pass: `AC5 corrupted stored session...`, `AC5 revoked refresh token...`, `AC5 refresh endpoint returns 400 invalid_grant (mocked)...` |
 
 ## Dev notes

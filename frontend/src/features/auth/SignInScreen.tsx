@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { en } from '@/i18n/en';
 import { Button, Card, Screen, Text, TextField } from '@/ui';
 import { normalizeSerbianPhone, SERBIA_PREFIX } from './phone';
+import { safeRedirect } from './redirect';
 import { useRequestCode } from './useRequestCode';
 
 const schema = z.object({
@@ -14,7 +15,8 @@ type Values = z.infer<typeof schema>;
 
 export function SignInScreen() {
   const router = useRouter();
-  const { phone: param } = useLocalSearchParams<{ phone?: string }>();
+  const { phone: param, redirect } = useLocalSearchParams<{ phone?: string; redirect?: string }>();
+  const safeTarget = safeRedirect(redirect);
   const initialPhone = (typeof param === 'string' && normalizeSerbianPhone(param)) || SERBIA_PREFIX;
   const { requestCode, loading, error } = useRequestCode();
   const { control, handleSubmit } = useForm<Values>({
@@ -26,7 +28,7 @@ export function SignInScreen() {
     const normalized = normalizeSerbianPhone(phone);
     if (!normalized) return;
     if (await requestCode(normalized)) {
-      router.push({ pathname: '/code' as '/', params: { phone: normalized } });
+      router.push({ pathname: '/code' as '/', params: { phone: normalized, ...(safeTarget ? { redirect: safeTarget } : {}) } });
     }
   });
 

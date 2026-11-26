@@ -14,6 +14,7 @@ export const palette = {
     danger: '#C0332B',
     star: '#E5A400',
     focus: '#1D6FE0',
+    scrim: 'rgba(14, 17, 22, 0.5)',
   },
   dark: {
     background: '#0E1116',
@@ -28,6 +29,7 @@ export const palette = {
     danger: '#FF7A70',
     star: '#F2B705',
     focus: '#5B9BFF',
+    scrim: 'rgba(0, 0, 0, 0.6)',
   },
 } as const;
 

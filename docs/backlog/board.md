@@ -10,7 +10,7 @@
 | US-0006 | Sample jobs are seeded once | E02 | done |
 | US-0007 | Request a sign-in code by phone | E02 | done |
 | US-0008 | Sign in with the SMS code | E02 | done |
-| US-0009 | Stay signed in and sign out | E02 | ready |
+| US-0009 | Stay signed in and sign out | E02 | done |
 | US-0010 | App calls the API as the signed-in user | E02 | ready |
 | US-0011 | Business tables exist in a locked-down app schema | E01 | done |
 | US-0012 | The database refuses duplicates that break core rules | E01 | done |
@@ -46,3 +46,5 @@
 | BUG-0022 | Phone validation message is not announced and not tied to the field (US-0007 AC3, medium) | E02 | fixed |
 | BUG-0023 | Stack header shows raw route names "index" and "code" (US-0007 AC1, low) | E02 | open |
 | BUG-0024 | /code without a phone shows an empty number instead of redirecting (US-0007 AC2, low) | E02 | fixed |
+| BUG-0025 | Protected home screen is mounted in the DOM behind the loading overlay while signed out (US-0009 AC2, low) | E02 | open |
+| BUG-0026 | Web e2e against the Metro dev server takes ~25 s per page load and flakes (low) | E02 | open |
