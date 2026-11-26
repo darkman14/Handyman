@@ -3,7 +3,7 @@ id: US-0005
 title: Seeded workers have trades, coverage and approval state
 epic: E02
 feature: F02.2
-status: ready
+status: done
 ---
 
 ## Story
@@ -42,14 +42,18 @@ As a developer or QA engineer, I want the seeded workers to come with their trad
 - 2026-11-10: seeded coverage is fixed at first seed; the seeder never changes existing worker data, so neighborhoods added to the area tree later are not added on restart (now in AC4).
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | n/a |
+| AC1 | pass: `AC1_workers_have_exactly_their_trades`, `US_0005_QaExploratoryTests.Exact_data_per_worker_and_coverage_count_matches_reference_data` | n/a |
+| AC2 | pass: `AC2_coverage_is_every_neighborhood_of_the_listed_municipalities_and_only_neighborhoods`, `Exact_data_per_worker_and_coverage_count_matches_reference_data`, `Database_constraints_back_the_seed_duplicates_and_orphans_are_rejected` | n/a |
+| AC3 | pass: `AC3_three_workers_approved_stefan_pending_and_clients_and_admin_have_nothing`, `Approved_at_is_set_now_not_in_the_future_and_stefan_is_null` | n/a |
+| AC4 | pass: `AC4_restart_changes_nothing_and_never_approves_stefan`, `Three_restarts_change_nothing_at_all`, `Admin_approval_of_stefan_then_restart_keeps_the_approval_time`, `Neighborhood_added_to_Vracar_after_first_seed_is_not_added_on_restart`, `Blocked_worker_stays_blocked_and_untouched_after_restart` | n/a |
+
+QA notes (qa-api, 2026-11-26): 21 US-0005 tests green. Also verified: workers step without the users step fails with "users seed step must run first" and writes nothing; a missing trade or municipality fails loudly and all-or-nothing (single SaveChanges); two hosts racing end in one complete seed (a loser, if any, fails with a unique violation, loud and retryable); `GET /api/trades` and `/api/areas` unchanged. Documented behaviour (pinned by test, by design): a worker whose profile exists but whose trades or coverage were removed is not repaired on restart. Real local stack run not done (needs the app DB connection from the local secrets file, which QA must not open).
 
 ## Dev notes
+- Seeded by `SeedDevWorkersStep` (data in `DevWorkers.cs`), registered after `SeedDevUsersStep` in Program.cs (order = registration order; the step throws if a worker user is missing).
+- A worker with an existing profile is skipped entirely, so approvals and coverage are fixed at first seed.

@@ -41,6 +41,8 @@ builder.Services.AddSupabaseJwt();
 builder.Services.AddHttpClient<ISupabaseAdminClient, SupabaseAdminClient>();
 builder.Services.AddScoped<DevSeeder>();
 builder.Services.AddScoped<IDevSeedStep, SeedDevUsersStep>();
+// Order matters: workers need the users from the step above.
+builder.Services.AddScoped<IDevSeedStep, SeedDevWorkersStep>();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
