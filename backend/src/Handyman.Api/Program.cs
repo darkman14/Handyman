@@ -43,6 +43,8 @@ builder.Services.AddScoped<DevSeeder>();
 builder.Services.AddScoped<IDevSeedStep, SeedDevUsersStep>();
 // Order matters: workers need the users from the step above.
 builder.Services.AddScoped<IDevSeedStep, SeedDevWorkersStep>();
+// Sample jobs need users, workers, trades and areas from the steps above.
+builder.Services.AddScoped<IDevSeedStep, SeedDevSampleJobsStep>();
 builder.Services.AddOpenApi();
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
