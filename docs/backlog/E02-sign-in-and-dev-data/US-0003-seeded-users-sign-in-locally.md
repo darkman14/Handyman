@@ -3,7 +3,7 @@ id: US-0003
 title: Seeded users can sign in locally
 epic: E02
 feature: F02.2
-status: ready
+status: in-qa
 ---
 
 ## Story
@@ -52,15 +52,22 @@ As a developer or QA engineer, I want the 10 seeded users to exist in local Supa
 - 2026-11-10: Mila's store referral is only a reminder for testing the E09 referral flow by hand; nothing is seeded for it and the data model is unchanged.
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
 | --- | --- | --- |
-| AC1 | | n/a |
-| AC2 | | n/a |
-| AC3 | | n/a |
-| AC4 | | |
-| AC5 | | n/a |
+| AC1 | pass: `US_0003_SeededUsersSignInLocallyTests.AC1_*`, `US_0003_QaExploratoryTests.Seeded_rows_match_workflow_table_exactly_*`; real stack: 10 POST + 10 INSERT on first start, no error | n/a |
+| AC2 | pass: `AC2_restart_*`, `Failure_on_fifth_create_*`, `Two_hosts_seeding_at_once_*`; real stack restart: 10 lookups, 0 creates, 0 inserts, no error | n/a |
+| AC3 | pass: `AC3_existing_auth_user_is_reused_*`, `Existing_auth_users_stored_in_other_phone_formats_are_reused` | n/a |
+| AC4 | pass in-process (`AC4_seeded_id_is_returned_by_get_me_*`, token minted with the seeded sub). BLOCKED on the real stack: `./scripts/dev-token.sh +381600000201` fails at `POST /auth/v1/otp` with 400 `phone_provider_disabled` ("Unsupported phone provider"); `GET /api/me` without token is 401 as expected. Needs the phone provider enabled in the local Supabase (user action). | |
+| AC5 | pass: `AC5_seeded_phones_equal_*`, `Ac5_comparison_detects_missing_extra_*`, `Config_toml_has_the_ten_numbers_*` (note: the dev test parses inline, so detection was proven on a copy of the comparison logic) | n/a |
 
 ## Dev notes
+- `Data/Seed/DevUsers.cs` holds the 10 users; `Data/Seed/SeedDevUsersStep.cs` is the `IDevSeedStep`. Phones are normalized to `+<digits>` everywhere (app.users stores `+381...`; Supabase returns digits only, compared by digits).
+- `ISupabaseAdminClient` gained `FindUserIdByPhoneAsync` (pages through `GET /auth/v1/admin/users`, 200 per page). Create sends `phone_confirm: true`.
+- Supabase down: all auth users are resolved before anything is written to `app.users`; an `HttpRequestException` is logged as an error and rethrown as `InvalidOperationException`, so API startup fails loudly and `app.users` stays empty. Auth users created before the outage are reused on the next start.
+- Mismatch (app.users row for a seeded phone has another id than the auth user, or the auth id is used by another row): the seeder logs an error and throws, startup fails. It never re-keys or adds a second row. Recovery: reset `app.users` and Supabase Auth together.
+- Worker trades/coverage/approval are not seeded here (US-0005).
+- The US_0004 tests replace all `IDevSeedStep` registrations with their probe step, so they do not run the real users step.
+- AC5 test parses `supabase/config.toml`; it already contained all 10 numbers, no change needed.
