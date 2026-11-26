@@ -4,7 +4,7 @@
 | --- | --- | --- | --- |
 | US-0001 | API rejects calls without a valid sign-in token | E02 | done |
 | US-0002 | API identifies the caller and refuses blocked users | E02 | done |
-| US-0003 | Seeded users can sign in locally | E02 | in-qa |
+| US-0003 | Seeded users can sign in locally | E02 | done |
 | US-0004 | Seeder runs only where it is allowed | E02 | done |
 | US-0005 | Seeded workers have trades, coverage and approval state | E02 | done |
 | US-0006 | Sample jobs are seeded once | E02 | ready |
@@ -39,3 +39,4 @@
 | BUG-0015 | Frontend Jest: one test fails on a cold first run, passes on rerun (low) | - | open |
 | BUG-0016 | All-zero GUID `sub` is accepted as a signed-in user (US-0001 AC4, low) | E02 | open |
 | BUG-0017 | Empty `Seed:Enabled` value crashes API startup (US-0004 AC2, medium) | E02 | fixed |
+| BUG-0019 | Real local Supabase tokens get 401: issuer is 127.0.0.1, API expects the configured Url (US-0003 AC4, medium) | E02 | fixed |

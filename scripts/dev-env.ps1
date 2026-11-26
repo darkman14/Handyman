@@ -18,6 +18,8 @@ npx supabase status -o env | ForEach-Object {
   if ($_ -match '^([A-Z_]+)="?(.*?)"?$') { $vars[$Matches[1]] = $Matches[2] }
 }
 function Fix([string]$v) { return $v.Replace("127.0.0.1", $dockerIp).Replace("localhost", $dockerIp) }
+$apiPort = if ($vars["API_URL"] -match '^https?://[^:/]+:(\d+)') { $Matches[1] } else { "54321" }
+$issuer = "http://127.0.0.1:$apiPort/auth/v1"   # local stack always signs with this issuer, whatever host reaches it
 $apiUrl = Fix $vars["API_URL"]; $studioUrl = Fix $vars["STUDIO_URL"]; $dbUrl = Fix $vars["DB_URL"]
 $anon = if ($vars["ANON_KEY"]) { $vars["ANON_KEY"] } else { $vars["PUBLISHABLE_KEY"] }
 $service = if ($vars["SERVICE_ROLE_KEY"]) { $vars["SERVICE_ROLE_KEY"] } else { $vars["SECRET_KEY"] }
@@ -28,7 +30,7 @@ New-Item -ItemType Directory -Force "$root/backend/src/Handyman.Api", "$root/fro
 @"
 {
   "ConnectionStrings": { "Default": "Host=$dockerIp;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
-  "Supabase": { "Url": "$apiUrl", "ServiceRoleKey": "$service" },
+  "Supabase": { "Url": "$apiUrl", "ServiceRoleKey": "$service", "Issuer": "$issuer" },
   "Seed": { "Enabled": true },
   "Cors": { "Origins": [$origins] }
 }

@@ -3,7 +3,7 @@ id: US-0003
 title: Seeded users can sign in locally
 epic: E02
 feature: F02.2
-status: in-qa
+status: done
 ---
 
 ## Story
@@ -60,7 +60,7 @@ No API change.
 | AC1 | pass: `US_0003_SeededUsersSignInLocallyTests.AC1_*`, `US_0003_QaExploratoryTests.Seeded_rows_match_workflow_table_exactly_*`; real stack: 10 POST + 10 INSERT on first start, no error | n/a |
 | AC2 | pass: `AC2_restart_*`, `Failure_on_fifth_create_*`, `Two_hosts_seeding_at_once_*`; real stack restart: 10 lookups, 0 creates, 0 inserts, no error | n/a |
 | AC3 | pass: `AC3_existing_auth_user_is_reused_*`, `Existing_auth_users_stored_in_other_phone_formats_are_reused` | n/a |
-| AC4 | pass in-process (`AC4_seeded_id_is_returned_by_get_me_*`, token minted with the seeded sub). BLOCKED on the real stack: `./scripts/dev-token.sh +381600000201` fails at `POST /auth/v1/otp` with 400 `phone_provider_disabled` ("Unsupported phone provider"); `GET /api/me` without token is 401 as expected. Needs the phone provider enabled in the local Supabase (user action). | |
+| AC4 | pass in-process (`AC4_seeded_id_is_returned_by_get_me_*`) and on the real local stack (2026-11-26, tech lead): `./scripts/dev-token.sh` with +381600000201, +381600000999 and +381600000104 returns a token and `GET /api/me` gives `200` with that user's id; no token gives `401`. Needed two fixes first: local phone provider enabled (config.toml) and BUG-0019 (`Supabase:Issuer`). | n/a |
 | AC5 | pass: `AC5_seeded_phones_equal_*`, `Ac5_comparison_detects_missing_extra_*`, `Config_toml_has_the_ten_numbers_*` (note: the dev test parses inline, so detection was proven on a copy of the comparison logic) | n/a |
 
 ## Dev notes

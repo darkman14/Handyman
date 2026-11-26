@@ -150,9 +150,10 @@ dotnet run --project backend/src/Handyman.Api
 | --- | --- |
 | `supabase start` fails | Make sure Docker is running. If a port is taken, stop the other service or run `npx supabase stop --all` and start again |
 | API fails with "password authentication failed" or "connection refused" | Supabase isn't running, or `appsettings.Local.json` is missing. Run `npx supabase start`, then `scripts/dev-env` |
-| Sign-in says the phone provider or SMS is not configured | Check `[auth.sms]` in `supabase/config.toml` (`enable_signup = true`), then `npx supabase stop` and `start`. If your CLI version still requires a provider, enable `[auth.sms.twilio]` with placeholder values; numbers in `[auth.sms.test_otp]` never reach the provider |
+| Sign-in says the phone provider or SMS is not configured | Check `[auth.sms]` in `supabase/config.toml` (`enable_signup = true`), then `npx supabase stop` and `start`. The local Auth server rejects `/otp` with `phone_provider_disabled` unless a provider is enabled, so `[auth.sms.twilio]` is enabled with fake placeholder values (local only); numbers in `[auth.sms.test_otp]` never reach the provider |
 | Code `123456` is rejected | The number isn't in `[auth.sms.test_otp]`, or was typed with a different format. Seeded numbers start with `+381` |
 | API returns `401` for every call | The app is pointed at a different Supabase instance than the API. Run `scripts/dev-env` again and restart both |
+| `401` after signing in locally | Re-run `scripts/dev-env` so `Supabase:Issuer` (`http://127.0.0.1:54321/auth/v1`, the issuer the local stack always signs with) is set, then restart the API |
 | Web app shows CORS errors | The API must run in Development and `Cors:Origins` must include `http://localhost:8081` |
 | Phone can't reach the API | Use `LAN_IP` (section 5), same Wi-Fi, and open ports 5080 and 54321 in the firewall |
 | Backend tests fail to start containers | Docker must be running; tests use their own Postgres container, not local Supabase |

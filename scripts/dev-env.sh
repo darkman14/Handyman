@@ -14,6 +14,8 @@ eval "$(npx supabase status -o env)"
 ANON_KEY="${ANON_KEY:-${PUBLISHABLE_KEY:-}}"
 SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-${SECRET_KEY:-}}"
 fix() { local v="${1//127.0.0.1/$docker_ip}"; echo "${v//localhost/$docker_ip}"; }
+api_port="$(echo "$API_URL" | sed -nE 's|^https?://[^:/]+:([0-9]+).*|\1|p')"; api_port="${api_port:-54321}"
+issuer="http://127.0.0.1:$api_port/auth/v1"   # local stack always signs with this issuer, whatever host reaches it
 API_URL="$(fix "$API_URL")"; STUDIO_URL="$(fix "$STUDIO_URL")"; DB_URL="$(fix "$DB_URL")"
 
 origins='"http://localhost:8081"'
@@ -23,7 +25,7 @@ mkdir -p "$root/backend/src/Handyman.Api" "$root/frontend"
 cat > "$root/backend/src/Handyman.Api/appsettings.Local.json" <<EOF
 {
   "ConnectionStrings": { "Default": "Host=$docker_ip;Port=54322;Database=postgres;Username=postgres;Password=postgres" },
-  "Supabase": { "Url": "$API_URL", "ServiceRoleKey": "$SERVICE_ROLE_KEY" },
+  "Supabase": { "Url": "$API_URL", "ServiceRoleKey": "$SERVICE_ROLE_KEY", "Issuer": "$issuer" },
   "Seed": { "Enabled": true },
   "Cors": { "Origins": [$origins] }
 }
