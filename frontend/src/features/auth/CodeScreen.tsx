@@ -4,6 +4,7 @@ import { en } from '@/i18n/en';
 import { Button, Card, Screen, Text, TextField } from '@/ui';
 import { formatCountdown, useCooldown } from './useCooldown';
 import { formatPhone, normalizeSerbianPhone } from './phone';
+import { DEFAULT_HOME, safeRedirect } from './redirect';
 import { useRequestCode } from './useRequestCode';
 import { useVerifyCode, type VerifyCodeError } from './useVerifyCode';
 
@@ -17,14 +18,14 @@ const verifyMessages: Record<VerifyCodeError, string> = {
 };
 
 export function CodeScreen() {
-  const { phone: param } = useLocalSearchParams<{ phone?: string }>();
+  const { phone: param, redirect } = useLocalSearchParams<{ phone?: string; redirect?: string }>();
   const phone = typeof param === 'string' ? normalizeSerbianPhone(param) : null;
   // No valid number means no code was requested: go back to sign-in.
   if (!phone) return <Redirect href="/" />;
-  return <CodeForm phone={phone} />;
+  return <CodeForm phone={phone} redirect={safeRedirect(redirect)} />;
 }
 
-function CodeForm({ phone }: { phone: string }) {
+function CodeForm({ phone, redirect }: { phone: string; redirect: string | null }) {
   const router = useRouter();
   const [code, setCode] = useState('');
   const { verify, loading, error, clearError } = useVerifyCode();
@@ -39,7 +40,7 @@ function CodeForm({ phone }: { phone: string }) {
   const onVerify = async () => {
     if (code.length !== CODE_LENGTH) return;
     if (await verify(phone, code)) {
-      router.replace('/home' as '/');
+      router.replace((redirect ?? DEFAULT_HOME) as '/');
     } else {
       setCode('');
     }
@@ -92,7 +93,7 @@ function CodeForm({ phone }: { phone: string }) {
         <Button
           variant="secondary"
           title={en.auth.changeNumber}
-          onPress={() => router.replace({ pathname: '/' as '/', params: { phone } })}
+          onPress={() => router.replace({ pathname: '/' as '/', params: { phone, ...(redirect ? { redirect } : {}) } })}
           disabled={loading}
         />
       </Card>

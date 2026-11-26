@@ -3,7 +3,7 @@ id: US-0009
 title: Stay signed in and sign out
 epic: E02
 feature: F02.3
-status: ready
+status: in-progress
 ---
 
 ## Story

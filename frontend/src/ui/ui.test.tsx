@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Badge, Button, Card, Screen, Stars, Text, TextField } from '.';
+import { Badge, Button, Card, ConfirmDialog, LoadingScreen, Screen, Stars, Text, TextField } from '.';
 
 describe('Button', () => {
   it('renders, handles press and has an accessibility label', async () => {
@@ -87,5 +87,33 @@ describe('Stars', () => {
     await render(<Stars value={1} onChange={onChange} />);
     await fireEvent.press(screen.getByLabelText('4 stars'));
     expect(onChange).toHaveBeenCalledWith(4);
+  });
+});
+
+describe('ConfirmDialog', () => {
+  it('shows the title and fires confirm and cancel', async () => {
+    const onConfirm = jest.fn();
+    const onCancel = jest.fn();
+    await render(
+      <ConfirmDialog visible title="Sign out?" confirmLabel="Sign out" cancelLabel="Cancel" onConfirm={onConfirm} onCancel={onCancel} />,
+    );
+    expect(screen.getByText('Sign out?')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+  it('renders nothing when not visible', async () => {
+    await render(
+      <ConfirmDialog visible={false} title="Sign out?" confirmLabel="Sign out" cancelLabel="Cancel" onConfirm={jest.fn()} onCancel={jest.fn()} />,
+    );
+    expect(screen.queryByText('Sign out?')).toBeNull();
+  });
+});
+
+describe('LoadingScreen', () => {
+  it('shows its label', async () => {
+    await render(<LoadingScreen label="Loading" />);
+    expect(screen.getByText('Loading')).toBeTruthy();
   });
 });

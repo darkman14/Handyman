@@ -7,3 +7,5 @@ export { Card } from './Card';
 export { TextField } from './TextField';
 export { Badge } from './Badge';
 export { Stars } from './Stars';
+export { ConfirmDialog } from './ConfirmDialog';
+export { LoadingScreen } from './LoadingScreen';

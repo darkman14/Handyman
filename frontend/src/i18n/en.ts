@@ -18,10 +18,16 @@ export const en = {
     resendIn: 'Send a new code in {time}',
     changeNumber: 'Change number',
   },
+  session: {
+    restoring: 'Loading your session',
+  },
   home: {
     title: 'Welcome',
     signedInAs: 'Signed in as {phone}',
     loading: 'Loading',
     placeholder: 'Your home screen is coming soon.',
+    signOut: 'Sign out',
+    signOutTitle: 'Sign out?',
+    cancel: 'Cancel',
   },
 };

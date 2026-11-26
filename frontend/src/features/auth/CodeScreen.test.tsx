@@ -5,7 +5,7 @@ import { CodeScreen } from './CodeScreen';
 
 const mockReplace = jest.fn();
 const mockRedirect = jest.fn();
-let mockParams: { phone?: string } = {};
+let mockParams: { phone?: string; redirect?: string } = {};
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: mockReplace }),
   useLocalSearchParams: () => mockParams,
@@ -164,4 +164,20 @@ describe('CodeScreen', () => {
       expect(screen.queryByLabelText(en.auth.codeLabel)).toBeNull();
     },
   );
+
+  it('US-0009 goes to the originally requested screen after signing in', async () => {
+    mockParams = { phone: '+381600000201', redirect: '/jobs/42' };
+    await render(<CodeScreen />);
+    await fireEvent.changeText(field(), '123456');
+    await fireEvent.press(signInButton());
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/jobs/42'));
+  });
+
+  it('US-0009 ignores an external redirect target and goes home', async () => {
+    mockParams = { phone: '+381600000201', redirect: 'https://evil.com' };
+    await render(<CodeScreen />);
+    await fireEvent.changeText(field(), '123456');
+    await fireEvent.press(signInButton());
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/home'));
+  });
 });
