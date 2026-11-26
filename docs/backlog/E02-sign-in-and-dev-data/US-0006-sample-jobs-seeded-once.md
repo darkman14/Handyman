@@ -3,7 +3,7 @@ id: US-0006
 title: Sample jobs are seeded once
 epic: E02
 feature: F02.2
-status: ready
+status: in-progress
 ---
 
 ## Story
@@ -47,7 +47,7 @@ As a developer or QA engineer, I want a few sample jobs in typical states seeded
 - 2026-11-10: no `Assigned` sample job for now; the seeded data table in workflow.md stays as is, and "hired worker sees full address" is tested by hiring on Ana's job first.
 
 ## API contract
-<Filled by backend-dev in contract mode: endpoints, request/response shapes, error codes.>
+No API change.
 
 ## QA results
 | Criterion | API (qa-api) | App (qa-app) |
@@ -59,3 +59,8 @@ As a developer or QA engineer, I want a few sample jobs in typical states seeded
 | AC5 | | n/a |
 
 ## Dev notes
+- Implemented as `SeedDevSampleJobsStep` (Data/Seed/), registered in Program.cs after the users and workers steps. It does nothing when any job exists; otherwise it saves the 3 jobs and 4 bids in one SaveChanges.
+- All states are reached through domain methods: Ivana's job uses `Job.Hire` then `Job.Finish`; no state needed bypassing the domain.
+- Job ids are time-ordered GUIDs (v7, 1 ms apart), because EF does not insert same-type rows in add order and job numbers (identity) must increase Ana, Milan, Ivana.
+- Arrival windows are tomorrow (UTC) for the open jobs; Ivana's job was created 5 days ago and finished 2 days after creation.
+- Missing users, trades or neighborhoods throw InvalidOperationException ("... seed steps must run first") and nothing is written.
